@@ -23,6 +23,13 @@ class AccesstiveOptions {
     if (resetBtn) {
       resetBtn.addEventListener('click', () => this.resetSettings());
     }
+
+    // Test button for sidebar
+    const testSidebarBtn = document.getElementById('test-sidebar');
+    if (testSidebarBtn) {
+      testSidebarBtn.addEventListener('click', () => this.testSidebar());
+    }
+
   }
 
   async loadSettings() {
@@ -44,6 +51,7 @@ class AccesstiveOptions {
     if (standardSelect) {
       standardSelect.value = settings.standard || 'wcag21aa';
     }
+
   }
 
   async saveSettings() {
@@ -77,6 +85,27 @@ class AccesstiveOptions {
       this.showStatus('Failed to reset settings', 'error');
     }
   }
+
+  async testSidebar() {
+    try {
+      // Open sidebar directly (user gesture required)
+      if (chrome.sidePanel) {
+        const window = await chrome.windows.getCurrent();
+        if (window) {
+          await chrome.sidePanel.open({ windowId: window.id });
+          this.showStatus('Sidebar opened successfully', 'success');
+        } else {
+          this.showStatus('No current window found', 'error');
+        }
+      } else {
+        this.showStatus('Side panel API not available', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to test sidebar:', error);
+      this.showStatus('Failed to open sidebar: ' + error.message, 'error');
+    }
+  }
+
 
   showStatus(message, type) {
     const statusElement = document.getElementById('status');

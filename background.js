@@ -15,9 +15,15 @@ class AccesstiveBackground {
         throw new Error('Chrome runtime API not available');
       }
       
+      
       // Setup event listeners
       chrome.runtime.onInstalled.addListener((details) => this.handleInstall(details));
       chrome.runtime.onMessage.addListener((request, sender, sendResponse) => this.handleMessage(request, sender, sendResponse));
+      
+      // Setup action click listener
+      if (chrome.action && chrome.action.onClicked) {
+        chrome.action.onClicked.addListener((tab) => this.handleActionClick(tab));
+      }
       
       // Setup context menu
       this.setupContextMenu();
@@ -28,6 +34,28 @@ class AccesstiveBackground {
 
   handleInstall(details) {
     this.setDefaultSettings();
+  }
+
+  handleActionClick(tab) {
+    // Always open sidebar (removed tab widget functionality)
+    if (!chrome.sidePanel) {
+      chrome.runtime.openOptionsPage();
+      return;
+    }
+    
+    // Use the tab's window ID directly to maintain user gesture
+    if (tab && tab.windowId) {
+      try {
+        chrome.sidePanel.open({ windowId: tab.windowId });
+      } catch (error) {
+        console.error('Failed to open sidebar:', error);
+        // Fallback to options page if sidebar fails
+        chrome.runtime.openOptionsPage();
+      }
+    } else {
+      // Fallback to options page if no tab info
+      chrome.runtime.openOptionsPage();
+    }
   }
 
   async setDefaultSettings() {
@@ -46,36 +74,16 @@ class AccesstiveBackground {
 
   handleMessage(request, sender, sendResponse) {
     switch (request.action) {
-      case 'startAudit':
-        this.startAuditFromPopup(request.options).then(sendResponse);
+      case 'closeSidebar':
+        this.closeSidebar().then(sendResponse);
         return true;
 
-      case 'stopAudit':
-        this.stopAuditFromPopup().then(sendResponse);
+      case 'scanUrl':
+        this.scanUrl(request.url, request.options).then(sendResponse);
         return true;
 
-      case 'getAuditData':
-        this.getAuditDataFromPopup().then(sendResponse);
-        return true;
-
-      case 'auditResults':
-        // Handle audit results from content script
-        if (sender.tab && sender.tab.id) {
-          this.handleAuditResults(sender.tab.id, request.results);
-        }
-        sendResponse({ success: true });
-        break;
-
-      case 'exportReport':
-        this.exportReport(request.data, request.format).then(sendResponse);
-        return true;
-
-      case 'highlightViolations':
-        this.highlightViolations(request.violations).then(sendResponse);
-        return true;
-
-      case 'clearHighlights':
-        this.clearHighlights().then(sendResponse);
+      case 'getScanHistory':
+        this.getScanHistory().then(sendResponse);
         return true;
 
       default:
@@ -83,347 +91,140 @@ class AccesstiveBackground {
     }
   }
 
-  async startAuditFromPopup(options = {}) {
+
+
+  async closeSidebar() {
     try {
-      // Get the active tab
-      if (!chrome.tabs || !chrome.tabs.query) {
-        throw new Error('Chrome tabs API not available');
+      if (!chrome.sidePanel) {
+        throw new Error('Side panel API not available');
       }
       
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) {
-        throw new Error('No active tab found');
-      }
-
-      return await this.startAudit(tab.id, options);
+      // Side panel doesn't have a direct close method, but we can notify the sidebar
+      return { success: true };
     } catch (error) {
-      console.error('Failed to start audit from popup:', error);
+      console.error('Failed to close sidebar:', error);
       return { success: false, error: error.message };
     }
   }
 
-  async startAudit(tabId, options = {}) {
-    try {
-      // Try to inject content script if not already loaded
-      try {
-        await this.ensureContentScriptLoaded(tabId);
-        
-        // Wait for content script to be ready
-        await this.waitForContentScript(tabId);
-        
-        // Send audit request to content script
-        const response = await chrome.tabs.sendMessage(tabId, {
-          action: 'startAudit',
-          options: options
-        });
 
-        return response;
-      } catch (contentScriptError) {
-        
-        // Fallback: return a simple audit result
+
+  async scanUrl(url, options = {}) {
+    try {
+      // Validate URL
+      if (!url || !this.isValidUrl(url)) {
+        throw new Error('Invalid URL provided');
+      }
+
+      // Create a new tab for scanning
+      const tab = await chrome.tabs.create({ 
+        url: url, 
+        active: false 
+      });
+
+      // Wait for tab to load
+      await this.waitForTabLoad(tab.id);
+
+      // Store scan data
+        const scanData = {
+          url: url,
+          timestamp: Date.now(),
+          options: options
+        };
+
+        // Save to scan history
+        await this.saveScanToHistory(scanData);
+
+        // Close the scanning tab
+        await chrome.tabs.remove(tab.id);
+
         return {
           success: true,
-          results: {
-            violations: [
-              {
-                id: 'content-script-unavailable',
-                impact: 'moderate',
-                description: 'Content script could not be loaded. Some accessibility checks may be limited.',
-                help: 'Please reload the page and try again.',
-                helpUrl: 'https://accesstive.org/help',
-                category: 'System',
-                nodes: [{
-                  target: ['body'],
-                  html: document.body ? document.body.outerHTML : 'Page content',
-                  failureSummary: 'Content script injection failed'
-                }]
-              }
-            ],
-            passes: [],
-            incomplete: [],
-            inapplicable: []
-          }
+          url: url,
+          timestamp: scanData.timestamp
         };
-      }
-    } catch (error) {
-      console.error('Failed to start audit:', error);
-      throw error;
-    }
-  }
 
-  async stopAuditFromPopup() {
-    try {
-      // Get the active tab
-      if (!chrome.tabs || !chrome.tabs.query) {
-        throw new Error('Chrome tabs API not available');
-      }
-      
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) {
-        throw new Error('No active tab found');
-      }
-
-      return await this.stopAudit(tab.id);
     } catch (error) {
-      console.error('Failed to stop audit from popup:', error);
+      console.error('URL scan failed:', error);
       return { success: false, error: error.message };
     }
   }
 
-  async stopAudit(tabId) {
+  async getScanHistory() {
     try {
-      await chrome.tabs.sendMessage(tabId, { action: 'stopAudit' });
-      return { success: true };
+      const result = await chrome.storage.local.get('scanHistory');
+      const history = result.scanHistory || [];
+      
+      // Sort by timestamp (newest first)
+      history.sort((a, b) => b.timestamp - a.timestamp);
+      
+      return { success: true, history: history };
     } catch (error) {
-      console.error('Failed to stop audit:', error);
+      console.error('Failed to get scan history:', error);
       return { success: false, error: error.message };
     }
   }
 
-  async getAuditDataFromPopup() {
+  async saveScanToHistory(scanData) {
     try {
-      // Get the active tab
-      if (!chrome.tabs || !chrome.tabs.query) {
-        throw new Error('Chrome tabs API not available');
+      const result = await chrome.storage.local.get('scanHistory');
+      const history = result.scanHistory || [];
+      
+      // Add new scan
+      history.unshift(scanData);
+      
+      // Keep only last 50 scans
+      if (history.length > 50) {
+        history.splice(50);
       }
       
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) {
-        throw new Error('No active tab found');
-      }
-
-      return await this.getAuditData(tab.id);
+      await chrome.storage.local.set({ scanHistory: history });
     } catch (error) {
-      console.error('Failed to get audit data from popup:', error);
-      return { violations: [], passes: [] };
+      console.error('Failed to save scan to history:', error);
     }
   }
 
-  async getAuditData(tabId) {
+  isValidUrl(string) {
     try {
-      const response = await chrome.tabs.sendMessage(tabId, { action: 'getAuditData' });
-      return response;
-    } catch (error) {
-      console.error('Failed to get audit data:', error);
-      return { violations: [], passes: [] };
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
-  handleAuditResults(tabId, results) {
-    this.notifyPopupOfResults(tabId, results);
-  }
 
-  async notifyPopupOfResults(tabId, results) {
-    // Store results for popup to retrieve
-    try {
-      await chrome.storage.local.set({
-        [`auditResults_${tabId}`]: results
-      });
-    } catch (error) {
-      console.error('Failed to store audit results:', error);
-    }
-  }
-
-  async ensureContentScriptLoaded(tabId) {
-    try {
-      // Check if content script is already loaded
-      await chrome.tabs.sendMessage(tabId, { action: 'ping' });
-      return;
-    } catch (error) {
+  async waitForTabLoad(tabId, timeout = 30000) {
+    return new Promise((resolve, reject) => {
+      const startTime = Date.now();
       
-      try {
-        // Check if scripting API is available
-        if (!chrome.scripting) {
-          throw new Error('Chrome scripting API not available');
+      const checkTab = async () => {
+        try {
+          const tab = await chrome.tabs.get(tabId);
+          
+          if (tab.status === 'complete') {
+            resolve();
+            return;
+          }
+          
+          if (Date.now() - startTime > timeout) {
+            reject(new Error('Tab load timeout'));
+            return;
+          }
+          
+          setTimeout(checkTab, 100);
+        } catch (error) {
+          reject(error);
         }
-        
-        // Try to inject content script manually
-        await chrome.scripting.executeScript({
-          target: { tabId: tabId },
-          files: ['content.js']
-        });
-        
-        await chrome.scripting.insertCSS({
-          target: { tabId: tabId },
-          files: ['content.css']
-        });
-        
-        // Wait a bit for the script to initialize
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-      } catch (injectError) {
-        console.error('Failed to inject content script:', injectError);
-        throw new Error(`Could not inject content script into page: ${injectError.message}`);
-      }
-    }
-  }
-
-  async waitForContentScript(tabId, maxRetries = 5) {
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        await chrome.tabs.sendMessage(tabId, { action: 'ping' });
-        return;
-      } catch (error) {
-        if (i === maxRetries - 1) {
-          throw new Error('Content script not available after retries');
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
-  }
-
-  async exportReport(data, format = 'json') {
-    try {
-      let content, filename, mimeType;
-
-      switch (format) {
-        case 'json':
-          content = JSON.stringify(data, null, 2);
-          filename = `accesstive-audit-${Date.now()}.json`;
-          mimeType = 'application/json';
-          break;
-        case 'csv':
-          content = this.convertToCSV(data);
-          filename = `accesstive-audit-${Date.now()}.csv`;
-          mimeType = 'text/csv';
-          break;
-        case 'html':
-          content = this.convertToHTML(data);
-          filename = `accesstive-audit-${Date.now()}.html`;
-          mimeType = 'text/html';
-          break;
-        default:
-          throw new Error('Unsupported format');
-      }
-
-      // Create blob and download
-      const blob = new Blob([content], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-
-      await chrome.downloads.download({
-        url: url,
-        filename: filename,
-        saveAs: true
-      });
-
-      // Clean up
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-      return { success: true, filename: filename };
-    } catch (error) {
-      console.error('Export failed:', error);
-      throw error;
-    }
-  }
-
-  convertToCSV(data) {
-    const headers = ['Rule ID', 'Impact', 'Description', 'Help URL'];
-    const rows = [headers.join(',')];
-
-    if (data.violations) {
-      data.violations.forEach(violation => {
-        const row = [
-          `"${violation.id}"`,
-          `"${violation.impact}"`,
-          `"${violation.description}"`,
-          `"${violation.helpUrl}"`
-        ];
-        rows.push(row.join(','));
-      });
-    }
-
-    return rows.join('\n');
-  }
-
-  convertToHTML(data) {
-    let html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Accesstive Audit Report</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          .violation { border: 1px solid #ddd; margin: 10px 0; padding: 15px; }
-          .critical { border-left: 5px solid #d32f2f; }
-          .serious { border-left: 5px solid #f57c00; }
-          .moderate { border-left: 5px solid #fbc02d; }
-          .minor { border-left: 5px solid #388e3c; }
-        </style>
-      </head>
-      <body>
-        <h1>Accesstive Audit Report</h1>
-        <p>Generated on: ${new Date().toLocaleString()}</p>
-    `;
-
-    if (data.violations && data.violations.length > 0) {
-      html += `<h2>Violations (${data.violations.length})</h2>`;
-      data.violations.forEach(violation => {
-        html += `
-          <div class="violation ${violation.impact}">
-            <h3>${violation.id}</h3>
-            <p><strong>Impact:</strong> ${violation.impact}</p>
-            <p>${violation.description}</p>
-            <p><a href="${violation.helpUrl}" target="_blank">Learn more</a></p>
-          </div>
-        `;
-      });
-    } else {
-      html += '<p>No accessibility issues found!</p>';
-    }
-
-    html += '</body></html>';
-    return html;
-  }
-
-  async highlightViolations(violations) {
-    try {
-      if (!chrome.tabs || !chrome.tabs.query) {
-        throw new Error('Chrome tabs API not available');
-      }
+      };
       
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) {
-        throw new Error('No active tab found');
-      }
-
-      await chrome.tabs.sendMessage(tab.id, {
-        action: 'highlightViolations',
-        violations: violations
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to highlight violations:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  async clearHighlights() {
-    try {
-      if (!chrome.tabs || !chrome.tabs.query) {
-        throw new Error('Chrome tabs API not available');
-      }
-      
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) {
-        throw new Error('No active tab found');
-      }
-
-      await chrome.tabs.sendMessage(tab.id, {
-        action: 'clearHighlights'
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to clear highlights:', error);
-      return { success: false, error: error.message };
-    }
+      checkTab();
+    });
   }
 
   setupContextMenu() {
     try {
       if (!chrome.contextMenus) {
-        console.warn('Context menus API not available');
         return;
       }
       
@@ -431,14 +232,32 @@ class AccesstiveBackground {
       chrome.contextMenus.removeAll(() => {
         chrome.contextMenus.create({
           id: 'auditPage',
-          title: 'Audit this page with Accesstive',
+          title: 'Open Accesstive Sidebar',
+          contexts: ['page']
+        });
+        
+        chrome.contextMenus.create({
+          id: 'openSidebar',
+          title: 'Open Accesstive Sidebar',
           contexts: ['page']
         });
       });
 
-      chrome.contextMenus.onClicked.addListener((info, tab) => {
-        if (info.menuItemId === 'auditPage') {
-          this.startAudit(tab.id);
+      chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+        if (info.menuItemId === 'auditPage' || info.menuItemId === 'openSidebar') {
+          // Open sidebar in response to user gesture
+          try {
+            if (!chrome.sidePanel) {
+              throw new Error('Side panel API not available');
+            }
+            
+            const window = await chrome.windows.getCurrent();
+            if (window) {
+              await chrome.sidePanel.open({ windowId: window.id });
+            }
+          } catch (error) {
+            console.error('Failed to open sidebar from context menu:', error);
+          }
         }
       });
     } catch (error) {
