@@ -1,0 +1,23 @@
+{
+  "name": "accesstive-audit-extension",
+  "version": "1.0.0",
+  "description": "Simple accessibility auditing tool for web developers",
+  "main": "background.js",
+  "scripts": {
+    "build": "echo 'Extension is ready to use. Load the directory in Chrome.'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "accessibility",
+    "wcag",
+    "audit",
+    "chrome-extension",
+    "web-development"
+  ],
+  "author": "Accesstive",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/accesstive/audit-extension"
+  }
+}

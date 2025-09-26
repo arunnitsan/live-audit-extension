@@ -1,0 +1,148 @@
+/* Accesstive - Accessibility Audit Extension - Content Script Styles */
+
+/* Highlight styles for accessibility issues */
+.accesstive-highlight {
+  outline: 3px solid #007acc !important;
+  outline-offset: 2px !important;
+  background-color: rgba(0, 122, 204, 0.1) !important;
+  position: relative !important;
+  box-shadow: 0 0 0 6px rgba(0, 122, 204, 0.3) !important;
+}
+
+/* Notification styles */
+.accesstive-notification {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 9999999999 !important;
+  padding: 12px 16px !important;
+  border-radius: 4px !important;
+  color: white !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  max-width: 300px !important;
+}
+
+.accesstive-notification--error {
+  background-color: #d32f2f !important;
+}
+
+.accesstive-notification--info {
+  background-color: #007acc !important;
+}
+
+.accesstive-notification--success {
+  background-color: #4caf50 !important;
+}
+
+.accesstive-notification--warning {
+  background-color: #f57c00 !important;
+}
+
+/* Violation highlighting styles */
+.accesstive-violation-highlight {
+  position: absolute !important;
+  pointer-events: none !important;
+  z-index: 999999 !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+.accesstive-violation-highlight:hover {
+  transform: scale(1.02) !important;
+  box-shadow: 0 0 0 6px rgba(0, 122, 204, 0.3) !important;
+}
+
+.accesstive-violation-tooltip {
+  position: absolute !important;
+  background: #1a1a1a !important;
+  color: white !important;
+  padding: 12px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  max-width: 300px !important;
+  z-index: 1000000 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  pointer-events: auto !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.accesstive-violation-tooltip__header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 8px !important;
+}
+
+.accesstive-violation-tooltip__impact {
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+  font-weight: bold !important;
+  text-transform: uppercase !important;
+}
+
+.accesstive-violation-tooltip__impact--critical {
+  background-color: #d32f2f !important;
+  color: white !important;
+}
+
+.accesstive-violation-tooltip__impact--serious {
+  background-color: #f57c00 !important;
+  color: white !important;
+}
+
+.accesstive-violation-tooltip__impact--moderate {
+  background-color: #fbc02d !important;
+  color: #333 !important;
+}
+
+.accesstive-violation-tooltip__impact--minor {
+  background-color: #888 !important;
+  color: white !important;
+}
+
+.accesstive-violation-tooltip__id {
+  font-family: monospace !important;
+  font-size: 10px !important;
+  color: #ccc !important;
+}
+
+.accesstive-violation-tooltip__content {
+  margin-bottom: 8px !important;
+}
+
+.accesstive-violation-tooltip__description {
+  margin: 0 0 6px 0 !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+}
+
+.accesstive-violation-tooltip__help {
+  margin: 0 !important;
+  color: #ccc !important;
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+}
+
+.accesstive-violation-tooltip__footer {
+  border-top: 1px solid #333 !important;
+  padding-top: 8px !important;
+}
+
+.accesstive-violation-tooltip__link {
+  color: #007acc !important;
+  text-decoration: none !important;
+  font-size: 11px !important;
+}
+
+.accesstive-violation-tooltip__link:hover {
+  text-decoration: underline !important;
+}
+
+/* Utility classes */
+.accesstive-hidden {
+  display: none !important;
+}
