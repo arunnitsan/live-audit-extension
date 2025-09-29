@@ -29,6 +29,16 @@ export class AccesstiveBackground {
       this.handleActionClick(tab)
     })
 
+    // Handle tab updates (URL changes)
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      this.handleTabUpdate(tabId, changeInfo, tab)
+    })
+
+    // Handle tab activation (when user switches tabs)
+    chrome.tabs.onActivated.addListener((activeInfo) => {
+      this.handleTabActivation(activeInfo)
+    })
+
     // Handle messages from content scripts and other parts
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       this.handleMessage(request, sender, sendResponse)
@@ -327,6 +337,181 @@ export class AccesstiveBackground {
       }
     } catch (error) {
       console.error('Error handling context menu click:', error)
+    }
+  }
+
+  private async handleTabUpdate(
+    tabId: number, 
+    changeInfo: chrome.tabs.TabChangeInfo, 
+    tab: chrome.tabs.Tab
+  ): Promise<void> {
+    try {
+      // Handle URL changes for the active tab
+      if (changeInfo.url && tab.active && tab.url) {
+        console.log('🔄 Tab URL updated:', {
+          tabId: tabId,
+          oldUrl: changeInfo.url,
+          newUrl: tab.url,
+          timestamp: new Date().toISOString(),
+          changeInfo: changeInfo
+        })
+        
+        // Store the URL change for reload detection
+        await this.storeUrlChange(tabId, changeInfo.url, tab.url)
+        
+        // Notify the sidebar about the URL change
+        await this.notifySidebarUrlChange(tab.url)
+        
+        // Also notify the content script
+        try {
+          await chrome.tabs.sendMessage(tabId, { 
+            action: 'urlChanged',
+            url: tab.url 
+          })
+          console.log('✅ Content script notified about URL change')
+        } catch (error) {
+          // Content script might not be loaded yet, this is okay
+          console.log('⚠️ Content script not ready for URL change notification')
+        }
+      }
+      
+      // Handle page reload completion (status becomes 'complete')
+      if (changeInfo.status === 'complete' && tab.active && tab.url) {
+        console.log('📄 Page reload completed:', {
+          tabId: tabId,
+          url: tab.url,
+          timestamp: new Date().toISOString()
+        })
+        
+        // Check if this is a reload after URL change and trigger rescan
+        await this.handlePageReloadComplete(tabId, tab.url)
+      }
+    } catch (error) {
+      console.error('❌ Error handling tab update:', error)
+    }
+  }
+
+  private async handleTabActivation(activeInfo: chrome.tabs.TabActiveInfo): Promise<void> {
+    try {
+      // Get the active tab details
+      const tab = await chrome.tabs.get(activeInfo.tabId)
+      
+      if (tab.url) {
+        console.log('Tab activated:', tab.url)
+        
+        // Notify the sidebar about the URL change
+        await this.notifySidebarUrlChange(tab.url)
+      }
+    } catch (error) {
+      console.error('Error handling tab activation:', error)
+    }
+  }
+
+  private async notifySidebarUrlChange(url: string): Promise<void> {
+    try {
+      console.log('📡 Notifying sidebar about URL change:', {
+        url: url,
+        timestamp: new Date().toISOString()
+      })
+      
+      // Send message to all sidebars (there should only be one active)
+      // We'll use the runtime message to reach the sidebar
+      chrome.runtime.sendMessage({ 
+        action: 'tabUrlChanged',
+        url: url 
+      }).then(() => {
+        console.log('✅ Sidebar URL change notification sent successfully')
+      }).catch((error) => {
+        // This is expected if no sidebar is listening
+        console.log('⚠️ No sidebar listening for URL change notification:', error)
+      })
+    } catch (error) {
+      console.error('❌ Error notifying sidebar of URL change:', error)
+    }
+  }
+
+  private async storeUrlChange(tabId: number, oldUrl: string, newUrl: string): Promise<void> {
+    try {
+      // Store URL change information to detect reloads
+      const urlChangeData = {
+        tabId: tabId,
+        oldUrl: oldUrl,
+        newUrl: newUrl,
+        timestamp: Date.now(),
+        needsRescan: true
+      }
+      
+      await chrome.storage.local.set({
+        [`urlChange_${tabId}`]: urlChangeData
+      })
+      
+      console.log('💾 Stored URL change for reload detection:', urlChangeData)
+    } catch (error) {
+      console.error('❌ Error storing URL change:', error)
+    }
+  }
+
+  private async handlePageReloadComplete(tabId: number, currentUrl: string): Promise<void> {
+    try {
+      // Check if there's a stored URL change for this tab
+      const result = await chrome.storage.local.get([`urlChange_${tabId}`])
+      const urlChangeData = result[`urlChange_${tabId}`]
+      
+      if (urlChangeData && urlChangeData.needsRescan && urlChangeData.newUrl === currentUrl) {
+        console.log('🔄 Detected page reload after URL change, triggering rescan:', {
+          tabId: tabId,
+          url: currentUrl,
+          previousUrl: urlChangeData.oldUrl,
+          timestamp: new Date().toISOString()
+        })
+        
+        // Clear the stored URL change to prevent duplicate scans
+        await chrome.storage.local.remove([`urlChange_${tabId}`])
+        
+        // Wait a bit for the page to fully load and then trigger rescan
+        setTimeout(async () => {
+          try {
+            // Notify sidebar to trigger rescan
+            await this.notifySidebarRescan(currentUrl)
+            
+            // Also notify content script if available
+            try {
+              await chrome.tabs.sendMessage(tabId, { 
+                action: 'triggerRescan',
+                url: currentUrl 
+              })
+              console.log('✅ Content script notified to trigger rescan')
+            } catch (error) {
+              console.log('⚠️ Content script not ready for rescan notification')
+            }
+          } catch (error) {
+            console.error('❌ Error triggering rescan after reload:', error)
+          }
+        }, 2000) // Wait 2 seconds for page to fully stabilize
+      }
+    } catch (error) {
+      console.error('❌ Error handling page reload complete:', error)
+    }
+  }
+
+  private async notifySidebarRescan(url: string): Promise<void> {
+    try {
+      console.log('🔄 Notifying sidebar to trigger rescan after reload:', {
+        url: url,
+        timestamp: new Date().toISOString()
+      })
+      
+      // Send message to sidebar to trigger rescan
+      chrome.runtime.sendMessage({ 
+        action: 'triggerRescanAfterReload',
+        url: url 
+      }).then(() => {
+        console.log('✅ Sidebar rescan notification sent successfully')
+      }).catch((error) => {
+        console.log('⚠️ No sidebar listening for rescan notification:', error)
+      })
+    } catch (error) {
+      console.error('❌ Error notifying sidebar to rescan:', error)
     }
   }
 }

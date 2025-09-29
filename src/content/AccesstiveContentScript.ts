@@ -72,6 +72,12 @@ export class AccesstiveContentScript {
           sendResponse({ success: true })
           break
 
+        case 'triggerRescan':
+          console.log('🔄 Triggering rescan from content script for URL:', request.url)
+          await this.initializeAudit(request.url)
+          sendResponse({ success: true })
+          break
+
         case 'getPageInfo':
           const pageInfo = this.getPageInfo()
           sendResponse({ success: true, data: pageInfo })

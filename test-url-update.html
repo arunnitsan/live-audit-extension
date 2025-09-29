@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Update Test - Accesstive Extension</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007acc;
+        }
+        .test-button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #005a9e;
+        }
+        .console-output {
+            background: #1e1e1e;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 URL Update Test - Accesstive Extension</h1>
+    
+    <div class="test-section">
+        <h2>Test Instructions</h2>
+        <p>This page helps test the URL update functionality of the Accesstive extension:</p>
+        <ol>
+            <li><strong>Load the extension</strong> in Chrome with this page open</li>
+            <li><strong>Open the sidebar</strong> by clicking the Accesstive extension icon</li>
+            <li><strong>Test URL updates</strong> using the methods below</li>
+            <li><strong>Check the console</strong> for detailed logging</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Manual Testing</h2>
+        <p>Test the URL update functionality manually:</p>
+        
+        <h3>1. Browser Console Commands</h3>
+        <p>Open the browser console (F12) and run these commands:</p>
+        <div class="console-output">
+// Check current status
+window.accesstiveSidebar.getStatus()
+
+// Test URL update
+window.accesstiveSidebar.testUrlUpdate('https://example.com')
+
+// Test with different URL
+window.accesstiveSidebar.testUrlUpdate('https://google.com')
+        </div>
+
+        <h3>2. Manual URL Change</h3>
+        <p>Manually change the URL in the address bar to test real-world scenarios:</p>
+        <ul>
+            <li>Go to <a href="https://google.com" target="_blank">https://google.com</a></li>
+            <li>Go to <a href="https://github.com" target="_blank">https://github.com</a></li>
+            <li>Go to <a href="https://stackoverflow.com" target="_blank">https://stackoverflow.com</a></li>
+        </ul>
+
+        <h3>3. Programmatic Testing</h3>
+        <button class="test-button" onclick="testUrlUpdate()">Test URL Update</button>
+        <button class="test-button" onclick="checkStatus()">Check Status</button>
+        <button class="test-button" onclick="simulateUrlChange()">Simulate URL Change</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Expected Behavior</h2>
+        <p>When a URL change occurs, you should see:</p>
+        <ul>
+            <li>✅ <strong>Background script</strong> detects the URL change</li>
+            <li>✅ <strong>Sidebar</strong> receives the notification</li>
+            <li>✅ <strong>data-tab-url attribute</strong> gets updated on the script tag</li>
+            <li>✅ <strong>Rescan</strong> is automatically triggered</li>
+            <li>✅ <strong>Console logs</strong> show the complete flow</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        function logResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('test-results');
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            resultsDiv.appendChild(statusDiv);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function testUrlUpdate() {
+            if (window.accesstiveSidebar) {
+                logResult('Testing URL update functionality...', 'info');
+                window.accesstiveSidebar.testUrlUpdate('https://test-url-update.com')
+                    .then(() => {
+                        logResult('URL update test completed successfully!', 'success');
+                    })
+                    .catch((error) => {
+                        logResult(`URL update test failed: ${error.message}`, 'error');
+                    });
+            } else {
+                logResult('Accesstive sidebar not available. Make sure the extension is loaded and sidebar is open.', 'error');
+            }
+        }
+
+        function checkStatus() {
+            if (window.accesstiveSidebar) {
+                const status = window.accesstiveSidebar.getStatus();
+                logResult(`Status: ${JSON.stringify(status, null, 2)}`, 'info');
+            } else {
+                logResult('Accesstive sidebar not available. Make sure the extension is loaded and sidebar is open.', 'error');
+            }
+        }
+
+        function simulateUrlChange() {
+            if (window.accesstiveSidebar) {
+                const testUrls = [
+                    'https://example.com',
+                    'https://test.com',
+                    'https://demo.com'
+                ];
+                const randomUrl = testUrls[Math.floor(Math.random() * testUrls.length)];
+                
+                logResult(`Simulating URL change to: ${randomUrl}`, 'info');
+                window.accesstiveSidebar.handleTabUrlChange(randomUrl)
+                    .then(() => {
+                        logResult(`URL change simulation completed for: ${randomUrl}`, 'success');
+                    })
+                    .catch((error) => {
+                        logResult(`URL change simulation failed: ${error.message}`, 'error');
+                    });
+            } else {
+                logResult('Accesstive sidebar not available. Make sure the extension is loaded and sidebar is open.', 'error');
+            }
+        }
+
+        // Auto-check for extension availability
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (window.accesstiveSidebar) {
+                    logResult('✅ Accesstive sidebar is available for testing!', 'success');
+                } else {
+                    logResult('⚠️ Accesstive sidebar not yet available. Make sure the extension is loaded.', 'info');
+                }
+            }, 2000);
+        });
+
+        // Listen for URL changes (for testing)
+        window.addEventListener('beforeunload', () => {
+            logResult('Page is about to unload - this should trigger URL change detection', 'info');
+        });
+    </script>
+</body>
+</html>

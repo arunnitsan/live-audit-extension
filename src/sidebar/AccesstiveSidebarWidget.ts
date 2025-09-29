@@ -10,9 +10,15 @@ export class AccesstiveSidebarWidget {
   private auditManager: NsaAuditAccesstive | null = null
   private widgetToggle: NsaWidgetToggle | null = null
   private isInitialized: boolean = false
+  private currentTabUrl: string = ''
 
   constructor() {
     this.init()
+    // Expose instance globally for testing (only in development)
+    if (typeof window !== 'undefined') {
+      (window as any).accesstiveSidebar = this
+      console.log('🔧 AccesstiveSidebarWidget exposed globally as window.accesstiveSidebar')
+    }
   }
 
   private async init(): Promise<void> {
@@ -36,6 +42,9 @@ export class AccesstiveSidebarWidget {
       
       // Get active tab URL and add it to the audit script
       await this.setActiveTabUrl()
+      
+      // Set up message listener for tab changes
+      this.setupMessageListener()
     } catch (error) {
       console.error('Failed to initialize sidebar widget:', error)
     }
@@ -134,10 +143,83 @@ export class AccesstiveSidebarWidget {
       if (response?.success && response.url) {
         // Store the URL for use by the audit functionality
         console.log('Current tab URL:', response.url)
-        // The URL will be used by the audit manager when it initializes
+        
+        // Set the data-tab-url attribute on the script tag
+        this.updateScriptUrlAttribute(response.url)
+        
+        // Store the URL for the audit manager
+        this.currentTabUrl = response.url
       }
     } catch (error) {
       console.error('Failed to get active tab URL:', error)
+    }
+  }
+
+  private updateScriptUrlAttribute(url: string): void {
+    try {
+      console.log('🔍 Looking for script element with src="./sidebar.js"')
+      
+      // Try multiple selectors to find the script tag
+      const selectors = [
+        '#accesstiveSidebar'
+      ]
+      
+      let scriptElement: HTMLScriptElement | null = null
+      let usedSelector = ''
+      
+      for (const selector of selectors) {
+        scriptElement = document.querySelector(selector) as HTMLScriptElement
+        if (scriptElement) {
+          usedSelector = selector
+          console.log(`✅ Found script element using selector: ${selector}`)
+          break
+        }
+      }
+      
+      if (scriptElement) {
+        console.log('📋 Script element details:', {
+          src: scriptElement.src,
+          type: scriptElement.type,
+          attributes: Array.from(scriptElement.attributes).map(attr => ({ name: attr.name, value: attr.value }))
+        })
+        
+        const oldUrl = scriptElement.getAttribute('data-tab-url')
+        console.log(`📝 Setting data-tab-url from "${oldUrl}" to "${url}"`)
+        
+        scriptElement.setAttribute('data-tab-url', url)
+        
+        // Verify the update was successful
+        const updatedUrl = scriptElement.getAttribute('data-tab-url')
+        console.log('📝 Updated script data-tab-url:', {
+          oldUrl: oldUrl,
+          newUrl: url,
+          updatedUrl: updatedUrl,
+          element: scriptElement,
+          usedSelector: usedSelector,
+          timestamp: new Date().toISOString()
+        })
+        
+        if (updatedUrl === url) {
+          console.log('✅ Script data-tab-url attribute successfully updated')
+        } else {
+          console.error('❌ Failed to update script data-tab-url attribute. Expected:', url, 'Got:', updatedUrl)
+        }
+        
+        // Additional verification - check if the attribute is actually in the DOM
+        const htmlContent = scriptElement.outerHTML
+        console.log('🔍 Script element HTML after update:', htmlContent)
+        
+      } else {
+        console.warn('⚠️ Script element not found with any selector. Available scripts:', 
+          Array.from(document.querySelectorAll('script')).map(script => ({
+            src: (script as HTMLScriptElement).src,
+            type: script.type,
+            outerHTML: script.outerHTML
+          }))
+        )
+      }
+    } catch (error) {
+      console.error('❌ Failed to update script URL attribute:', error)
     }
   }
 
@@ -246,6 +328,122 @@ export class AccesstiveSidebarWidget {
         chrome.runtime.sendMessage({ action: 'closeSidebar' })
       }
     })
+  }
+
+  private setupMessageListener(): void {
+    // Listen for messages from background script about tab changes
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      if (request.action === 'tabUrlChanged' && request.url) {
+        console.log('Tab URL changed to:', request.url)
+        this.handleTabUrlChange(request.url)
+        sendResponse({ success: true })
+      } else if (request.action === 'triggerRescanAfterReload' && request.url) {
+        console.log('🔄 Triggering rescan after page reload:', request.url)
+        this.handleRescanAfterReload(request.url)
+        sendResponse({ success: true })
+      }
+      return true // Keep message channel open for async responses
+    })
+  }
+
+  private async handleTabUrlChange(newUrl: string): Promise<void> {
+    try {
+      console.log('🔄 URL Change Detected:', {
+        oldUrl: this.currentTabUrl,
+        newUrl: newUrl,
+        timestamp: new Date().toISOString()
+      })
+      
+      // Update the stored URL
+      this.currentTabUrl = newUrl
+      
+      // Update the script data-tab-url attribute
+      this.updateScriptUrlAttribute(newUrl)
+      
+      // Trigger rescan if audit manager is available
+      if (this.auditManager) {
+        console.log('🔄 Triggering rescan for new URL:', newUrl)
+        // The audit manager will handle the rescan with the new URL
+        await this.auditManager.fetchAccessibilityReport()
+        console.log('✅ Rescan completed for URL:', newUrl)
+      } else {
+        console.warn('⚠️ Audit manager not available for rescan')
+      }
+    } catch (error) {
+      console.error('❌ Error handling tab URL change:', error)
+    }
+  }
+
+  /**
+   * Public method to manually test URL updates
+   * This can be called from the browser console for testing
+   */
+  public async testUrlUpdate(testUrl: string = 'https://example.com'): Promise<void> {
+    console.log('🧪 Testing URL update functionality...')
+    try {
+      await this.handleTabUrlChange(testUrl)
+      console.log('🧪 Test completed successfully')
+    } catch (error) {
+      console.error('🧪 Test failed:', error)
+    }
+  }
+
+  /**
+   * Public method to test script tag attribute update directly
+   * This can be called from the browser console for testing
+   */
+  public testScriptAttributeUpdate(testUrl: string = 'https://test.com'): void {
+    console.log('🧪 Testing script attribute update directly...')
+    this.updateScriptUrlAttribute(testUrl)
+  }
+
+  private async handleRescanAfterReload(url: string): Promise<void> {
+    try {
+      console.log('🔄 Handling rescan after page reload:', {
+        url: url,
+        currentUrl: this.currentTabUrl,
+        timestamp: new Date().toISOString()
+      })
+      
+      // Update the stored URL
+      this.currentTabUrl = url
+      
+      // Update the script data-tab-url attribute
+      this.updateScriptUrlAttribute(url)
+      
+      // Trigger rescan if audit manager is available
+      if (this.auditManager) {
+        console.log('🔄 Triggering automatic rescan after page reload for URL:', url)
+        // Add a small delay to ensure page is fully loaded
+        setTimeout(async () => {
+          try {
+            await this.auditManager!.fetchAccessibilityReport()
+            console.log('✅ Automatic rescan completed after page reload')
+          } catch (error) {
+            console.error('❌ Error during automatic rescan after reload:', error)
+          }
+        }, 1000) // Additional 1 second delay for page stability
+      } else {
+        console.log('⚠️ Audit manager not available for rescan after reload')
+      }
+    } catch (error) {
+      console.error('❌ Error handling rescan after reload:', error)
+    }
+  }
+
+  /**
+   * Public method to get current status for debugging
+   */
+  public getStatus(): any {
+    const scriptElement = document.querySelector('script[src="./sidebar.js"]') as HTMLScriptElement
+    return {
+      isInitialized: this.isInitialized,
+      currentTabUrl: this.currentTabUrl,
+      scriptDataTabUrl: scriptElement?.getAttribute('data-tab-url'),
+      auditManagerAvailable: !!this.auditManager,
+      widgetToggleAvailable: !!this.widgetToggle,
+      timestamp: new Date().toISOString()
+    }
   }
 
   public destroy(): void {
