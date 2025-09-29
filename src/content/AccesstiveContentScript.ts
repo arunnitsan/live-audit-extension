@@ -63,8 +63,47 @@ export class AccesstiveContentScript {
           break
 
         case 'highlightElement':
-          await this.highlightElement(request.selector, request.issue)
+          await this.highlightElement(request.selector, {
+            issueIndex: request.issueIndex,
+            issueTitle: request.issueTitle
+          })
           sendResponse({ success: true })
+          break
+
+        case 'findElementsAndAttachTooltips':
+          try {
+            console.log('📡 Content Script: Received findElementsAndAttachTooltips message:', request)
+            
+            const { selector, issues } = request
+            
+            if (!selector || !issues) {
+              console.error('❌ Content Script: No selector or issues provided for tooltip attachment')
+              sendResponse({ success: false, error: 'No selector or issues provided' })
+              return
+            }
+            
+            // Find elements using the selector
+            const elements = this.findElementsBySelector(selector)
+            
+            if (elements.length === 0) {
+              console.warn('⚠️ Content Script: No elements found for selector:', selector)
+              sendResponse({ success: false, error: 'No elements found' })
+              return
+            }
+            
+            console.log('✅ Content Script: Found', elements.length, 'elements for tooltip attachment')
+            
+            // Attach tooltips to each found element
+            for (const element of elements) {
+              await this.attachTooltipToElement(element, issues)
+            }
+            
+            console.log('✅ Content Script: Tooltips attached successfully to', elements.length, 'elements')
+            sendResponse({ success: true, elementsCount: elements.length })
+          } catch (error) {
+            console.error('❌ Content Script: Error finding elements and attaching tooltips:', error)
+            sendResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' })
+          }
           break
 
         case 'removeHighlights':
@@ -74,6 +113,12 @@ export class AccesstiveContentScript {
 
         case 'triggerRescan':
           console.log('🔄 Triggering rescan from content script for URL:', request.url)
+          await this.initializeAudit(request.url)
+          sendResponse({ success: true })
+          break
+
+        case 'urlChanged':
+          console.log('🔄 URL changed in content script:', request.url)
           await this.initializeAudit(request.url)
           sendResponse({ success: true })
           break
@@ -192,12 +237,56 @@ export class AccesstiveContentScript {
 
   private async highlightElement(selector: string, issue: any): Promise<void> {
     try {
-      const element = document.querySelector(selector)
+      console.log('🎯 Highlighting element with selector:', selector, 'Issue:', issue)
+      
+      // First, try to decode the selector if it's JSON encoded
+      let decodedSelector = selector
+      try {
+        if (selector.startsWith('"') && selector.endsWith('"')) {
+          decodedSelector = JSON.parse(selector)
+        }
+      } catch (e) {
+        // If JSON parsing fails, use the original selector
+        decodedSelector = selector
+      }
+      
+      console.log('📝 Decoded selector:', decodedSelector)
+      
+      // Try multiple selectors to find the element
+      let element = document.querySelector(decodedSelector)
+      
+      if (!element) {
+        console.log('🔍 Element not found with original selector, trying alternatives...')
+        
+        // Generate progressive selectors for better element finding
+        const progressiveSelectors = this.generateProgressiveSelectors(decodedSelector)
+        
+        for (const altSelector of progressiveSelectors) {
+          console.log('🔄 Trying progressive selector:', altSelector)
+          element = document.querySelector(altSelector)
+          if (element) {
+            console.log('✅ Found element with progressive selector:', altSelector)
+            break
+          }
+        }
+      }
+      
       if (element) {
         this.addHighlight(element as HTMLElement, issue)
+        console.log('✅ Element highlighted successfully:', element.tagName, element.className)
+      } else {
+        console.warn('❌ Element not found for selector:', decodedSelector)
+        console.warn('💡 Available elements in page:', document.querySelectorAll('*').length)
+        
+        // Try to find similar elements for debugging
+        const tagName = decodedSelector.match(/^([a-zA-Z]+)/)?.[1]
+        if (tagName) {
+          const similarElements = document.querySelectorAll(tagName.toLowerCase())
+          console.log(`🔍 Found ${similarElements.length} elements with tag '${tagName}'`)
+        }
       }
     } catch (error) {
-      console.error('Error highlighting element:', error)
+      console.error('❌ Error highlighting element:', error)
     }
   }
 
@@ -205,26 +294,97 @@ export class AccesstiveContentScript {
     // Remove existing highlights
     this.removeHighlights()
     
-    // Add highlight class
+    // Store original styles for restoration
+    const originalStyles = {
+      outline: element.style.outline,
+      boxShadow: element.style.boxShadow,
+      backgroundColor: element.style.backgroundColor,
+      border: element.style.border,
+      zIndex: element.style.zIndex,
+      position: element.style.position
+    }
+    
+    // Add highlight class and styling
     element.classList.add('accesstive-highlight')
     element.setAttribute('data-accesstive-issue', JSON.stringify(issue))
     
-    // Scroll to element
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Add prominent inline styles for better visibility
+    element.style.outline = '4px solid #ff4444'
+    element.style.boxShadow = '0 0 15px rgba(255, 68, 68, 0.8)'
+    element.style.backgroundColor = 'rgba(255, 68, 68, 0.15)'
+    element.style.border = '2px solid #ff4444'
+    element.style.zIndex = '999999'
+    element.style.position = 'relative'
+    
+    // Store original styles for restoration
+    Object.entries(originalStyles).forEach(([key, value]) => {
+      element.setAttribute(`data-original-${key}`, value)
+    })
+    
+    // Scroll to element with smooth behavior
+    element.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'center',
+      inline: 'nearest'
+    })
+    
+    console.log('🎯 Element highlighted with issue:', issue)
+    console.log('📍 Element details:', {
+      tagName: element.tagName,
+      className: element.className,
+      id: element.id,
+      textContent: element.textContent?.substring(0, 100) + '...'
+    })
     
     // Remove highlight after delay
     setTimeout(() => {
+      this.removeElementHighlight(element, originalStyles)
+    }, 8000) // Increased to 8 seconds for better visibility
+  }
+
+  private removeElementHighlight(element: HTMLElement, originalStyles: any): void {
+    try {
       element.classList.remove('accesstive-highlight')
       element.removeAttribute('data-accesstive-issue')
-    }, 5000)
+      
+      // Restore original styles
+      Object.entries(originalStyles).forEach(([key, value]) => {
+        element.style[key as any] = value as string
+        element.removeAttribute(`data-original-${key}`)
+      })
+      
+      console.log('🧹 Element highlight removed')
+    } catch (error) {
+      console.error('❌ Error removing element highlight:', error)
+    }
   }
 
   private removeHighlights(): void {
     const highlightedElements = document.querySelectorAll('.accesstive-highlight')
     highlightedElements.forEach(element => {
-      element.classList.remove('accesstive-highlight')
-      element.removeAttribute('data-accesstive-issue')
+      const htmlElement = element as HTMLElement
+      
+      // Restore original styles
+      const originalStyles = {
+        outline: htmlElement.getAttribute('data-original-outline') || '',
+        boxShadow: htmlElement.getAttribute('data-original-boxShadow') || '',
+        backgroundColor: htmlElement.getAttribute('data-original-backgroundColor') || '',
+        border: htmlElement.getAttribute('data-original-border') || '',
+        zIndex: htmlElement.getAttribute('data-original-zIndex') || '',
+        position: htmlElement.getAttribute('data-original-position') || ''
+      }
+      
+      htmlElement.classList.remove('accesstive-highlight')
+      htmlElement.removeAttribute('data-accesstive-issue')
+      
+      // Restore all original styles
+      Object.entries(originalStyles).forEach(([key, value]) => {
+        htmlElement.style[key as any] = value
+        htmlElement.removeAttribute(`data-original-${key}`)
+      })
     })
+    
+    console.log('🧹 All highlights removed')
   }
 
   private getPageInfo(): any {
@@ -261,6 +421,278 @@ export class AccesstiveContentScript {
       chrome.runtime.sendMessage(message)
     } catch (error) {
       console.error('Error sending message:', error)
+    }
+  }
+
+  /**
+   * Generate progressively simplified selectors to find elements when the full selector fails
+   */
+  private generateProgressiveSelectors(selector: string): string[] {
+    const selectors: string[] = []
+    
+    // Remove attribute selectors progressively
+    let simplifiedSelector = selector
+    
+    // Try removing src attributes first (common issue)
+    selectors.push(simplifiedSelector.replace(/\[src="[^"]*"\]/g, ''))
+    
+    // Try removing all attribute selectors
+    selectors.push(simplifiedSelector.replace(/\[[^\]]*\]/g, ''))
+    
+    // Try removing specific attribute types
+    selectors.push(simplifiedSelector.replace(/\[class="[^"]*"\]/g, ''))
+    selectors.push(simplifiedSelector.replace(/\[id="[^"]*"\]/g, ''))
+    
+    // Try getting just the last element in the chain
+    const parts = simplifiedSelector.split(' > ')
+    if (parts.length > 1) {
+      // Try the last element
+      selectors.push(parts[parts.length - 1])
+      
+      // Try the last two elements
+      if (parts.length > 2) {
+        selectors.push(parts.slice(-2).join(' > '))
+      }
+      
+      // Try the last three elements
+      if (parts.length > 3) {
+        selectors.push(parts.slice(-3).join(' > '))
+      }
+    }
+    
+    // Try just the tag name of the last element
+    const lastPart = parts[parts.length - 1] || simplifiedSelector
+    const tagMatch = lastPart.match(/^([a-zA-Z0-9-]+)/)
+    if (tagMatch) {
+      selectors.push(tagMatch[1])
+    }
+    
+    // Try removing child combinators and using descendant selectors
+    selectors.push(simplifiedSelector.replace(/ > /g, ' '))
+    
+    // Remove duplicates and empty selectors
+    return [...new Set(selectors)].filter(s => s && s.trim().length > 0)
+  }
+
+  /**
+   * Find elements by selector in the active tab's document
+   */
+  private findElementsBySelector(selector: string): Element[] {
+    try {
+      console.log('🔍 Content Script: Looking for elements with selector:', selector)
+
+      // First try direct match
+      const directMatches = Array.from(document.querySelectorAll(selector))
+      if (directMatches.length > 0) {
+        console.log('✅ Content Script: Found', directMatches.length, 'elements with direct selector match')
+        return directMatches
+      }
+
+      console.warn('❌ Content Script: No elements found for selector:', selector)
+      return []
+    } catch (error) {
+      console.error(`❌ Content Script: Error finding elements by selector: ${selector}`, error)
+      return []
+    }
+  }
+
+  /**
+   * Attach tooltip to an element in the active tab
+   */
+  private async attachTooltipToElement(element: Element, issues: any[]): Promise<void> {
+    try {
+      console.log('🎯 Content Script: Attaching tooltip to element:', element.tagName)
+
+      // Create a tooltip icon element
+      const tooltipIcon = document.createElement('div')
+      tooltipIcon.className = 'nsa-tooltip-icon'
+      tooltipIcon.innerHTML = '⚠️' // Simple warning icon
+      tooltipIcon.style.cssText = `
+        position: absolute;
+        background: #ff4444;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        cursor: pointer;
+        z-index: 999999;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      `
+
+      // Position the tooltip icon relative to the element
+      const rect = element.getBoundingClientRect()
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft
+
+      tooltipIcon.style.top = (rect.top + scrollTop - 10) + 'px'
+      tooltipIcon.style.left = (rect.right + scrollLeft + 5) + 'px'
+
+      // Add click handler to show tooltip details
+      tooltipIcon.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.showTooltipDetails(element, issues, tooltipIcon)
+      })
+
+      // Add hover handler for quick preview
+      tooltipIcon.addEventListener('mouseenter', () => {
+        this.showTooltipPreview(element, issues, tooltipIcon)
+      })
+
+      tooltipIcon.addEventListener('mouseleave', () => {
+        this.hideTooltipPreview()
+      })
+
+      // Add the tooltip icon to the document
+      document.body.appendChild(tooltipIcon)
+
+      console.log('✅ Content Script: Tooltip attached successfully to element')
+
+    } catch (error) {
+      console.error('❌ Content Script: Error attaching tooltip to element:', error)
+    }
+  }
+
+  /**
+   * Show tooltip details on click
+   */
+  private showTooltipDetails(element: Element, issues: any[], tooltipIcon: HTMLElement): void {
+    try {
+      console.log('📋 Content Script: Showing tooltip details for', issues.length, 'issues')
+
+      // Create tooltip content
+      const tooltipContent = document.createElement('div')
+      tooltipContent.className = 'nsa-tooltip-content'
+      tooltipContent.style.cssText = `
+        position: absolute;
+        background: white;
+        border: 2px solid #ff4444;
+        border-radius: 8px;
+        padding: 12px;
+        max-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 999999;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.4;
+      `
+
+      // Add issues to tooltip content
+      issues.forEach((issue, index) => {
+        const issueDiv = document.createElement('div')
+        issueDiv.style.cssText = `
+          margin-bottom: 8px;
+          padding: 8px;
+          background: #fff5f5;
+          border-left: 4px solid #ff4444;
+          border-radius: 4px;
+        `
+        
+        issueDiv.innerHTML = `
+          <div style="font-weight: bold; color: #d32f2f; margin-bottom: 4px;">
+            ${issue.title || 'Accessibility Issue'}
+          </div>
+          <div style="color: #666; font-size: 12px;">
+            ${issue.message || 'No description available'}
+          </div>
+        `
+        
+        tooltipContent.appendChild(issueDiv)
+      })
+
+      // Position tooltip content
+      const iconRect = tooltipIcon.getBoundingClientRect()
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft
+
+      tooltipContent.style.top = (iconRect.bottom + scrollTop + 5) + 'px'
+      tooltipContent.style.left = (iconRect.left + scrollLeft) + 'px'
+
+      // Add close button
+      const closeButton = document.createElement('button')
+      closeButton.innerHTML = '×'
+      closeButton.style.cssText = `
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        color: #666;
+      `
+      closeButton.addEventListener('click', () => {
+        document.body.removeChild(tooltipContent)
+      })
+
+      tooltipContent.appendChild(closeButton)
+      document.body.appendChild(tooltipContent)
+
+      // Auto-remove after 10 seconds
+      setTimeout(() => {
+        if (document.body.contains(tooltipContent)) {
+          document.body.removeChild(tooltipContent)
+        }
+      }, 10000)
+
+    } catch (error) {
+      console.error('❌ Content Script: Error showing tooltip details:', error)
+    }
+  }
+
+  /**
+   * Show tooltip preview on hover
+   */
+  private showTooltipPreview(element: Element, issues: any[], tooltipIcon: HTMLElement): void {
+    try {
+      // Create simple preview tooltip
+      const preview = document.createElement('div')
+      preview.className = 'nsa-tooltip-preview'
+      preview.style.cssText = `
+        position: absolute;
+        background: #333;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 999999;
+        pointer-events: none;
+      `
+      
+      preview.textContent = `${issues.length} accessibility issue${issues.length > 1 ? 's' : ''}`
+      
+      // Position preview
+      const iconRect = tooltipIcon.getBoundingClientRect()
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft
+
+      preview.style.top = (iconRect.bottom + scrollTop + 2) + 'px'
+      preview.style.left = (iconRect.left + scrollLeft) + 'px'
+
+      document.body.appendChild(preview)
+
+      // Store reference for removal
+      ;(tooltipIcon as any).tooltipPreview = preview
+
+    } catch (error) {
+      console.error('❌ Content Script: Error showing tooltip preview:', error)
+    }
+  }
+
+  /**
+   * Hide tooltip preview
+   */
+  private hideTooltipPreview(): void {
+    try {
+      const preview = document.querySelector('.nsa-tooltip-preview')
+      if (preview && document.body.contains(preview)) {
+        document.body.removeChild(preview)
+      }
+    } catch (error) {
+      console.error('❌ Content Script: Error hiding tooltip preview:', error)
     }
   }
 }

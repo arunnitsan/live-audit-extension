@@ -132,14 +132,18 @@ export class AccesstiveBackground {
 
         case 'getCurrentTabUrl':
           try {
+            console.log('🔍 Background script: Getting current tab URL...')
             const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
             const tab = tabs[0]
             if (tab && tab.url) {
+              console.log('✅ Background script: Found active tab URL:', tab.url)
               sendResponse({ success: true, url: tab.url })
             } else {
+              console.warn('⚠️ Background script: No active tab found or no URL')
               sendResponse({ success: false, error: 'No active tab found' })
             }
           } catch (error) {
+            console.error('❌ Background script: Failed to get tab URL:', error)
             sendResponse({ success: false, error: 'Failed to get tab URL' })
           }
           break

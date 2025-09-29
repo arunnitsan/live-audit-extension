@@ -247,6 +247,12 @@ class NsaTooltipManager extends NsaBaseAccesstive {
 
             if (!issue.selector || !issue.context) return;
 
+            // Skip selectors that are widget attributes or sidebar elements
+            if (this.isSidebarElementSelector(issue.selector) || !this.isValidAccessibilitySelector(issue.selector)) {
+              console.log('⚠️ Tooltip Manager: Skipping invalid selector during issue extraction:', issue.selector);
+              return;
+            }
+
             this.issues.push({
               title: issue.title,
               message: issue.message,
@@ -345,6 +351,9 @@ class NsaTooltipManager extends NsaBaseAccesstive {
 
     // Remove sibling tooltips specifically
     document.querySelectorAll('.nsa-tooltip-sibling').forEach(el => el.remove());
+
+    // Remove any sidebar tooltip indicators (fallback elements)
+    document.querySelectorAll('.nsa-sidebar-tooltip-indicator').forEach(el => el.remove());
 
     // Destroy any remaining tippy instances
     this.tippyMap.forEach((instance) => instance?.destroy?.());
@@ -701,11 +710,8 @@ class NsaTooltipManager extends NsaBaseAccesstive {
 
       // Add event listeners for AI solution buttons in the tooltip
       shadowRoot.addEventListener('click', (e) => {
-        if (!e.target || !(e.target instanceof Element)) return;
-        
-        const target = e.target;
-        try {
-          const aiSolutionButton = target.closest('.nsa-ai-solution-button');
+        const target = e.target as Element;
+        const aiSolutionButton = target.closest('.nsa-ai-solution-button');
         if (aiSolutionButton) {
           e.stopPropagation();
           const issueIndex = parseInt(aiSolutionButton.getAttribute('data-issue-index') || '0', 10);
@@ -735,9 +741,6 @@ class NsaTooltipManager extends NsaBaseAccesstive {
           // Use the AI solution manager to show the modal and handle the request
           this.aiSolutionManager.showAiSolutionModal(issueData);
           this.handleLanguageChange();
-        }
-        } catch (error) {
-          console.warn('Error in tooltip click handler:', error);
         }
       });
 
@@ -1281,60 +1284,225 @@ class NsaTooltipManager extends NsaBaseAccesstive {
         return [];
       }
 
-      const directMatches = Array.from(document.querySelectorAll(selector));
-      if (directMatches.length > 0) {
-        return directMatches;
-      }
-
-      const elementTypeMatch = selector.match(/^([a-zA-Z0-9-]+)(?:\.|#|\[|$|\s)/);
-      if (!elementTypeMatch) {
+      // Skip selectors that target sidebar elements (extension's own UI)
+      if (this.isSidebarElementSelector(selector)) {
+        console.log('⚠️ Tooltip Manager: Skipping sidebar element selector:', selector);
         return [];
       }
 
-      const elementType = elementTypeMatch[1].toUpperCase();
-
-      if (this.voidAndWrappedElements.includes(elementType)) {
-        const selectorLowerCase = elementType.toLowerCase();
-        const allElementsOfType = Array.from(document.querySelectorAll(selectorLowerCase));
-
-        const elementsWithSiblingTooltips = allElementsOfType.filter(element => {
-          if (element.nextElementSibling &&
-              element.nextElementSibling.classList.contains(this.nsaTooltipIconClass) &&
-              (element.nextElementSibling as HTMLElement).getAttribute('data-original-element')?.toLowerCase() === selectorLowerCase) {
-            return true;
-          }
-
-          const elementId = element.id || element.getAttribute('data-nsa-element-id');
-          if (elementId && document.querySelector(`.${this.nsaTooltipIconClass}[data-target-element-id="${elementId}"]`)) {
-            return true;
-          }
-
-          return false;
-        });
-
-        if (elementsWithSiblingTooltips.length > 0) {
-          return elementsWithSiblingTooltips;
-        }
-
-        const wrappedElements: Element[] = [];
-
-        document.querySelectorAll('.nsa-tooltip-wrapper').forEach(wrapper => {
-          if (wrapper.getAttribute('data-original-element')?.toUpperCase() === elementType.toLowerCase() ||
-              wrapper.querySelector(elementType.toLowerCase())) {
-            const wrappedElement = wrapper.querySelector(elementType.toLowerCase());
-            if (wrappedElement) {
-              wrappedElements.push(wrappedElement);
-            }
-          }
-        });
-
-        return wrappedElements;
+      // Validate that this is a proper accessibility issue selector
+      if (!this.isValidAccessibilitySelector(selector)) {
+        console.log('⚠️ Tooltip Manager: Skipping invalid accessibility selector:', selector);
+        return [];
       }
 
+      console.log('🔍 Tooltip Manager: Looking for elements with selector in ACTIVE TAB:', selector);
+
+      // Send message to content script to find elements in the active tab
+      this.findElementsInActiveTab(selector);
+
+      // Return empty array since we're delegating to content script
+      // The actual tooltip attachment will happen via content script communication
       return [];
     } catch (error) {
-      console.error(`Invalid selector: ${selector}`, error);
+      console.error(`❌ Tooltip Manager: Error finding elements by selector: ${selector}`, error);
       return [];
+    }
+  }
+
+  /**
+   * Check if a selector targets sidebar elements (extension's own UI)
+   */
+  private isSidebarElementSelector(selector: string): boolean {
+    if (!selector) return false;
+
+    // List of selectors that target sidebar/extension elements
+    const sidebarSelectors = [
+      'data-nsalabel',      // Widget translation attribute
+      'nsa-',              // NSA extension prefix
+      'nsaTooltip',        // NSA tooltip class
+      'nsa-audit',         // NSA audit classes
+      'nsa-widget',        // NSA widget classes
+      'nsa-sidebar',       // NSA sidebar classes
+      'nsa-toggle',        // NSA toggle classes
+      'nsa-button',        // NSA button classes
+      'nsa-icon',          // NSA icon classes
+      'nsa-content',       // NSA content classes
+      'nsa-panel',         // NSA panel classes
+      'nsa-modal',         // NSA modal classes
+      'nsa-tooltip',       // NSA tooltip classes
+      'nsa-highlight',     // NSA highlight classes
+      'nsa-error',         // NSA error classes
+      'nsa-warning',       // NSA warning classes
+      'nsa-success',       // NSA success classes
+      'nsa-info'           // NSA info classes
+    ];
+
+    const selectorLower = selector.toLowerCase();
+    
+    // Check if selector contains any sidebar-specific patterns
+    return sidebarSelectors.some(pattern => selectorLower.includes(pattern.toLowerCase()));
+  }
+
+  /**
+   * Check if a selector is a valid accessibility issue selector
+   * This ensures we only process actual website element selectors, not widget attributes
+   */
+  private isValidAccessibilitySelector(selector: string): boolean {
+    if (!selector) return false;
+
+    // Skip if it's a sidebar element selector
+    if (this.isSidebarElementSelector(selector)) {
+      return false;
+    }
+
+    // Skip if it's just an attribute selector without element context
+    // Like [data-nsalabel] without any element prefix
+    if (selector.match(/^\[[^\]]+\]$/)) {
+      console.log('⚠️ Tooltip Manager: Skipping attribute-only selector:', selector);
+      return false;
+    }
+
+    // Skip if it contains widget-specific attributes
+    const widgetAttributes = [
+      'data-nsalabel',
+      'data-nsa-',
+      'data-tooltip',
+      'data-widget'
+    ];
+
+    const selectorLower = selector.toLowerCase();
+    if (widgetAttributes.some(attr => selectorLower.includes(attr))) {
+      console.log('⚠️ Tooltip Manager: Skipping widget attribute selector:', selector);
+      return false;
+    }
+
+    // Valid selectors should target actual HTML elements
+    return true;
+  }
+
+
+  /**
+   * Send message to content script to find elements in the active tab
+   */
+  private async findElementsInActiveTab(selector: string): Promise<void> {
+    try {
+      console.log('📡 Tooltip Manager: Sending message to content script to find elements:', selector);
+
+      // Get the current tab to send the message to the content script
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const activeTab = tabs[0];
+
+      if (!activeTab?.id) {
+        console.error('❌ Tooltip Manager: No active tab found');
+        return;
+      }
+
+      console.log('📍 Tooltip Manager: Active tab details:', {
+        id: activeTab.id,
+        url: activeTab.url,
+        title: activeTab.title,
+        status: activeTab.status
+      });
+
+      // Find the issues for this selector
+      const issues = this.issues.filter(issue => issue.selector === selector);
+      
+      if (issues.length === 0) {
+        console.warn('⚠️ Tooltip Manager: No issues found for selector:', selector);
+        console.log('🔍 Tooltip Manager: Available issues count:', this.issues.length);
+        console.log('🔍 Tooltip Manager: Sample selectors:', this.issues.slice(0, 3).map(i => i.selector));
+        return;
+      }
+
+      // First, check if content script is loaded by sending a ping
+      let contentScriptReady = false;
+      try {
+        console.log('📡 Tooltip Manager: Checking if content script is loaded...');
+        const pingResponse = await chrome.tabs.sendMessage(activeTab.id, { action: 'ping' });
+        console.log('✅ Tooltip Manager: Content script is loaded and responding');
+        contentScriptReady = true;
+      } catch (pingError) {
+        console.warn('⚠️ Tooltip Manager: Content script not loaded, attempting to inject...');
+        
+        // Try to inject the content script
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: activeTab.id },
+            files: ['content.js']
+          });
+          console.log('✅ Tooltip Manager: Content script injected successfully');
+          
+          // Wait a bit for the script to initialize and verify it's ready
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Verify content script is now ready
+          try {
+            const verifyResponse = await chrome.tabs.sendMessage(activeTab.id, { action: 'ping' });
+            console.log('✅ Tooltip Manager: Content script verified as ready after injection');
+            contentScriptReady = true;
+          } catch (verifyError) {
+            console.error('❌ Tooltip Manager: Content script not responding after injection');
+            return;
+          }
+        } catch (injectError) {
+          console.error('❌ Tooltip Manager: Failed to inject content script:', injectError);
+          return;
+        }
+      }
+
+      // Only proceed if content script is ready
+      if (!contentScriptReady) {
+        console.error('❌ Tooltip Manager: Content script is not ready, cannot attach tooltips');
+        return;
+      }
+
+      // Send message to content script to find elements and attach tooltips
+      const response = await chrome.tabs.sendMessage(activeTab.id, {
+        action: 'findElementsAndAttachTooltips',
+        selector: selector,
+        issues: issues
+      });
+
+      if (response?.success) {
+        console.log('✅ Tooltip Manager: Content script found elements and attached tooltips successfully');
+      } else {
+        console.error('❌ Tooltip Manager: Content script failed to find elements or attach tooltips:', response?.error);
+        // Don't create sidebar fallback - we want tooltips only in active tab
+        console.log('⚠️ Tooltip Manager: Failed to attach tooltips to active tab elements');
+      }
+
+    } catch (error) {
+      console.error('❌ Tooltip Manager: Error communicating with content script:', error);
+      
+      // If it's a "receiving end does not exist" error, try to inject the content script
+      if (error instanceof Error && error.message.includes('receiving end does not exist')) {
+        console.log('🔄 Tooltip Manager: Attempting to inject content script...');
+        try {
+          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          const activeTab = tabs[0];
+          
+          if (activeTab?.id) {
+            await chrome.scripting.executeScript({
+              target: { tabId: activeTab.id },
+              files: ['content.js']
+            });
+            console.log('✅ Tooltip Manager: Content script injected successfully');
+            
+            // Wait for script to initialize and retry
+            setTimeout(() => {
+              this.findElementsInActiveTab(selector);
+            }, 2000);
+          }
+        } catch (injectError) {
+          console.error('❌ Tooltip Manager: Failed to inject content script:', injectError);
+          // Don't create sidebar fallback - we want tooltips only in active tab
+          console.log('⚠️ Tooltip Manager: Failed to inject content script, cannot attach tooltips to active tab');
+        }
+      } else {
+        // For other errors, don't create sidebar fallback
+        console.log('⚠️ Tooltip Manager: Communication error, cannot attach tooltips to active tab');
+      }
     }
   }
 

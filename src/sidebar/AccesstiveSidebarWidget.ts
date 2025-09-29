@@ -52,6 +52,17 @@ export class AccesstiveSidebarWidget {
 
   private async initializeWidget(): Promise<void> {
     try {
+      console.log('🚀 Initializing Accesstive sidebar widget...')
+      
+      // Get the current tab URL first - this is critical for the data-tab-url attribute
+      await this.setActiveTabUrl()
+      
+      // Verify the URL was set correctly
+      if (!this.currentTabUrl) {
+        console.warn('⚠️ No URL set after setActiveTabUrl, retrying...')
+        await this.setActiveTabUrl()
+      }
+      
       // Initialize the widget toggle
       this.widgetToggle = new NsaWidgetToggle()
       
@@ -65,13 +76,17 @@ export class AccesstiveSidebarWidget {
       // Set up keyboard navigation
       this.setupKeyboardNavigation()
       
+      // Set up message listener for tab changes
+      this.setupMessageListener()
+      
       // Show the widget
       this.showWidget()
       
       this.isInitialized = true
-      console.log('Sidebar widget initialized successfully')
+      console.log('🎉 Sidebar widget initialized successfully')
+      console.log('📍 Final current tab URL:', this.currentTabUrl)
     } catch (error) {
-      console.error('Error initializing widget:', error)
+      console.error('❌ Error initializing widget:', error)
     }
   }
 
@@ -149,9 +164,16 @@ export class AccesstiveSidebarWidget {
         
         // Store the URL for the audit manager
         this.currentTabUrl = response.url
+      } else {
+        // No fallback for sidebar - we must get the URL from the background script
+        console.warn('Background script did not provide URL. Sidebar cannot determine current tab URL.')
+        console.warn('This usually means the extension needs to be reloaded or the background script is not responding.')
+        // Don't set a fallback URL for the sidebar - it should always get the actual tab URL
       }
     } catch (error) {
       console.error('Failed to get active tab URL:', error)
+      console.error('Sidebar cannot function without the current tab URL. Please reload the extension or check if background script is working.')
+      // Don't set a fallback URL - the sidebar should always get the actual tab URL from the background script
     }
   }
 
@@ -369,6 +391,22 @@ export class AccesstiveSidebarWidget {
       } else {
         console.warn('⚠️ Audit manager not available for rescan')
       }
+      
+      // Also notify the content script about the URL change
+      try {
+        await chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]?.id) {
+            chrome.tabs.sendMessage(tabs[0].id, { 
+              action: 'urlChanged',
+              url: newUrl 
+            }).catch((error) => {
+              console.log('Content script not ready for URL change notification:', error)
+            })
+          }
+        })
+      } catch (error) {
+        console.log('Error notifying content script:', error)
+      }
     } catch (error) {
       console.error('❌ Error handling tab URL change:', error)
     }
@@ -428,6 +466,37 @@ export class AccesstiveSidebarWidget {
       }
     } catch (error) {
       console.error('❌ Error handling rescan after reload:', error)
+    }
+  }
+
+  /**
+   * Public method to manually refresh the current tab URL
+   */
+  public async refreshCurrentTabUrl(): Promise<void> {
+    console.log('🔄 Manually refreshing current tab URL...')
+    try {
+      await this.setActiveTabUrl()
+      if (this.currentTabUrl) {
+        console.log('✅ Current tab URL refreshed:', this.currentTabUrl)
+      } else {
+        console.warn('⚠️ Failed to refresh current tab URL')
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing current tab URL:', error)
+    }
+  }
+
+  /**
+   * Public method to manually fix the data-tab-url attribute
+   */
+  public fixDataTabUrl(): void {
+    console.log('🔧 Manually fixing data-tab-url attribute...')
+    if (this.currentTabUrl) {
+      this.updateScriptUrlAttribute(this.currentTabUrl)
+      console.log('✅ data-tab-url attribute fixed with URL:', this.currentTabUrl)
+    } else {
+      console.warn('⚠️ No current tab URL available to fix data-tab-url')
+      console.warn('💡 Try calling window.accesstiveSidebar.refreshCurrentTabUrl() first')
     }
   }
 
