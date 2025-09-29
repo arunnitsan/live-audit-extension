@@ -1,0 +1,50 @@
+@use '../base/variables' as *;
+
+button,
+a,
+.nsa-btn,
+input,
+.nsa-switch,
+.nsa-select,
+.nsa-modal-close,
+.nsa-audit-standard,
+.nsa-audit-language {
+    outline: 2px dashed transparent !important;
+    outline-offset: 2px;
+
+    &:focus-visible {
+        outline-color: inherit !important;
+    }
+}
+
+// Handle focus-visible for input containers
+.nsa-impact-filter {
+    &:has(.nsa-impact-filter__checkbox:focus-visible) {
+        outline: 1px dashed light-dark($nsa-black, $nsa-white) !important;
+        outline-offset: 1px;
+    }
+}
+
+.nsa-category-toggle,
+.nsa-issue-header {
+    outline: 2px dashed transparent !important;
+    outline-offset: -4px;
+
+    &:focus-visible,
+    &:focus {
+        outline-color: inherit !important;
+    }
+}
+
+.nsa-audit-scan-btn,
+.nsa-btn-pdf-download,
+.nsa-modal-close-btn {
+    &:focus-visible {
+        outline-color: light-dark(var(--nsa-black), var(--nsa-white)) !important;
+    }
+}
+
+.nsa-btn--more-option,
+.nsa-more-options-trigger {
+    outline-offset: -2px;
+}

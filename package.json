@@ -1,21 +1,51 @@
 {
   "name": "accesstive-audit-extension",
   "version": "1.0.0",
-  "description": "Simple accessibility auditing tool for web developers",
-  "main": "background.js",
+  "description": "Chrome extension for real-time accessibility auditing using Accesstive widget design",
+  "type": "module",
   "scripts": {
-    "build": "echo 'Extension is ready to use. Load the directory in Chrome.'",
-    "test": "echo 'No tests specified'"
+    "dev": "vite",
+    "build": "tsc && vite build && node copy-static.js",
+    "build:watch": "tsc && vite build --watch",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "clean": "rimraf dist",
+    "package": "npm run build && npm run package:zip",
+    "package:zip": "cd dist && zip -r ../accesstive-extension.zip ."
   },
   "keywords": [
     "accessibility",
     "wcag",
     "audit",
     "chrome-extension",
-    "web-development"
+    "web-development",
+    "typescript",
+    "vite"
   ],
   "author": "Accesstive",
   "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "@vitejs/plugin-legacy": "^5.0.0",
+    "eslint": "^8.54.0",
+    "glob": "^11.0.3",
+    "rimraf": "^5.0.5",
+    "sass": "^1.69.5",
+    "terser": "^5.44.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0",
+    "vite-plugin-static-copy": "^3.1.2"
+  },
+  "dependencies": {
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.6.0",
+    "tippy.js": "^6.3.7"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/accesstive/audit-extension"

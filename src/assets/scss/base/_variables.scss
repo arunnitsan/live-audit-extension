@@ -1,0 +1,83 @@
+:host,
+:root {
+  --nsa-primary: #17529F;
+  --nsa-primary-rgba-3: color-mix(in srgb, #{var(--nsa-primary)} 3%, transparent);
+  --nsa-primary-rgba-5: color-mix(in srgb, #{var(--nsa-primary)} 5%, transparent);
+  --nsa-primary-rgba-7: color-mix(in srgb, #{var(--nsa-primary)} 7%, transparent);
+  --nsa-primary-rgba-10: color-mix(in srgb, #{var(--nsa-primary)} 10%, transparent);
+  --nsa-primary-rgba-15: color-mix(in srgb, #{var(--nsa-primary)} 15%, transparent);
+  --nsa-primary-rgba-20: color-mix(in srgb, #{var(--nsa-primary)} 20%, transparent);
+  --nsa-primary-rgba-50: color-mix(in srgb, #{var(--nsa-primary)} 50%, transparent);
+  --nsa-primary-rgba-80: color-mix(in srgb, #{var(--nsa-primary)} 80%, transparent);
+
+  --nsa-secondary: #04122D;
+  --nsa-secondary-rgba-5: color-mix(in srgb, #{var(--nsa-secondary)} 5%, transparent);
+  --nsa-secondary-rgba-10: color-mix(in srgb, #{var(--nsa-secondary)} 10%, transparent);
+  --nsa-secondary-rgba-15: color-mix(in srgb, #{var(--nsa-secondary)} 15%, transparent);
+  --nsa-secondary-rgba-80: color-mix(in srgb, #{var(--nsa-secondary)} 80%, transparent);
+
+  --nsa-white: #fff;
+  --nsa-white-rgba-5: color-mix(in srgb, #{var(--nsa-white)} 5%, transparent);
+  --nsa-white-rgba-10: color-mix(in srgb, #{var(--nsa-white)} 10%, transparent);
+  --nsa-white-rgba-20: color-mix(in srgb, #{var(--nsa-white)} 20%, transparent);
+
+  --nsa-black: #000;
+  --nsa-black-rgba-20: color-mix(in srgb, #{var(--nsa-black)} 20%, transparent);
+
+  --nsa-text-color: #04122D;
+  --nsa-dark-color: var(--nsa-text-color);
+  --nsa-red-color: #8a0900;
+  --nsa-warning-color: #ffa500;
+  --nsa-hint-color: #808080;
+  --nsa-green-color: #008000;
+  --nsa-blue-color: #0000ff;
+  --nsa-outline-color: #0aaee5;
+
+  --nsa-highlight-header-color: #000;
+  --nsa-highlight-header-bg: #ffff00;
+  --nsa-highlight-link-color: #000;
+  --nsa-highlight-link-bg: #00c8ff;
+
+  --nsa-icon-color-primary: currentColor;
+  --nsa-icon-size-small: 16px;
+  --nsa-icon-size-medium: 32px;
+  --nsa-icon-size-large: 48px;
+  --nsa-icon-size-mega: 64px;
+  --nsa-icon-unify-modifier: 0.86;
+  --nsa-icon-opacity-disabled: 0.5;
+
+  --nsa-widget-head-color: #fff;
+  --nsa-orange-color: #a57c00;
+}
+
+//****************************************************************************
+// variables overrides
+//***************************************************************************/
+$font-family: 'Roboto', Arial, Helvetica, sans-serif;
+$font-base-url: 'https://cdn.accesstive.com/assets/';
+//****************************************************************************
+//  Custom variables
+//***************************************************************************/
+$nsa-primary-color: var(--nsa-primary);
+$nsa-secondary-color: var(--nsa-secondary);
+$nsa-text-color: var(--nsa-text-color);
+$nsa-dark-color: var(--nsa-dark-color);
+$nsa-white: var(--nsa-white);
+$nsa-black: var(--nsa-black);
+
+$nsa-milky-white-color: #f2f5f9;
+$nsa-medium-milky-white-color: #f1f5fb;
+$nsa-gray-medium-color: #f4f7fA;
+$nsa-gray-color: #e3e3e3;
+$nsa-light-gray-color: #e2e3e6;
+$nsa-gray-dark-color: #707070;
+$nsa-navy-blue-color: #333;
+
+//****************************************************************************
+//  Font Weight
+//***************************************************************************/
+$light-weight: 300;
+$regular-weight: 400;
+$medium-weight: 500;
+$semibold-weight: 600;
+$bold-weight: 700;

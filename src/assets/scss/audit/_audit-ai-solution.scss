@@ -1,0 +1,295 @@
+@use '../base/variables'as *;
+@use '../base/font-size'as font;
+@use '../mixins/mixins'as mix;
+@use './shared'as shared;
+
+// Modal styles with light/dark theme support
+.nsa-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  font-family: $font-family;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999999999;
+  display: none;
+  --modal-bg: light-dark(#ffffff, #1a1a1a);
+  --text-color: light-dark(#333333, #ffffff);
+  --text-secondary: light-dark(#666666, #aaaaaa);
+  --border-color: light-dark(#e0e0e0, #333333);
+  --button-bg: light-dark(#f0f0f0, #2a2a2a);
+  --button-border: light-dark(#d0d0d0, #444444);
+  --button-hover-bg: light-dark(#e0e0e0, #3a3a3a);
+  --code-bg: light-dark(#f5f5f5, #2a2a2a);
+  --inline-code-bg: light-dark(#e8e8e8, #333333);
+  --code-text: light-dark(#333333, #ffffff);
+  --accent-color: #17529F;
+  --error-color: #e74c3c;
+  --success-color: #2ecc71;
+  --error-bg: light-dark(#fde8e8, #2a1a1a);
+  --spinner-bg: light-dark(#e0e0e0, #333333);
+  --summary-bg: light-dark(#f5f5f5, #2a2a2a);
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: $font-family;
+  }
+
+  &--dark,
+  .nsa-audit-body--dark & {
+    color-scheme: dark;
+  }
+
+  &-content {
+    background-color: var(--modal-bg, #ffffff);
+    margin: 5% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 800px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &-issue-title {
+    color: var(--text-color, #333333);
+    @include mix.font-size(font.$font-sizes20);
+
+  }
+
+  &-ai-issue-title {
+    color: var(--text-color, #333333);
+
+    code {
+      background-color: var(--accent-color, #2980b9);
+      color: var(--text-color, #333333);
+    }
+  }
+
+  &-ai-issue-tags {
+    .nsa-tag {
+      color: var(--text-color, #333333);
+      border: 1px solid var(--text-secondary, #333333);
+      margin: 2px;
+      display: inline-block;
+      line-height: 1.4 !important;
+      @include mix.font-size(font.$font-sizes14);
+    }
+  }
+
+  &-ai-issue-code {
+    background-color: var(--accent-color, #f5f5f5);
+    color: var(--nsa-white);
+    padding: 0 5px;
+    @include mix.font-size(font.$font-sizes14);
+  }
+
+  &-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+
+    .nsa-modal-title {
+      margin: 0;
+      color: var(--text-color, #333333);
+      @include mix.font-size(font.$font-sizes20);
+    }
+  }
+
+  &-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-secondary, #666666);
+
+    &:hover {
+      color: var(--text-color, #333333);
+    }
+  }
+
+  &-body {
+    padding: 20px 10px;
+    overflow-y: auto;
+    flex: 1;
+
+    p {
+        color: light-dark(#333333, #ffffff);
+    }
+  }
+
+  &-footer {
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color, #e0e0e0);
+    text-align: right;
+
+    button {
+      padding: 8px 16px;
+      background-color: var(--button-bg, #f0f0f0);
+      border: 1px solid var(--button-border, #d0d0d0);
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text-color, #333333);
+
+      &:hover {
+        background-color: var(--button-hover-bg, #e0e0e0);
+      }
+    }
+  }
+}
+
+// AI Solution content styles
+.nsa-ai {
+  &-request {
+    .nsa-modal-issue-title {
+      margin-top: 0;
+      color: var(--text-color, #333333);
+    }
+  }
+
+  &-response {
+    margin-bottom: 20px;
+  }
+
+  &-solution-content {
+    background-color: var(--code-bg, #f5f5f5);
+    padding: 15px;
+    border-radius: 4px;
+    border-left: 4px solid var(--success-color, #2ecc71);
+    margin-top: 10px;
+    color: var(--text-color, #333333);
+
+    &.nsa-ai-solution-fail {
+      border-left: 4px solid var(--error-color, #e74c3c);
+      font-size: 18px;
+    }
+
+    br {
+      height: 0;
+      display: block;
+    }
+
+    p {
+      margin-bottom: 15px;
+      padding: 0;
+      margin-top: 0;
+    }
+
+    code {
+      background-color: var(--inline-code-bg, #e8e8e8);
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: monospace;
+      color: var(--code-text, #333333);
+    }
+
+    pre {
+      background-color: var(--code-bg, #f5f5f5);
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 10px 0;
+      color: var(--code-text, #333333);
+    }
+  }
+
+  &-solution-item:not(:last-child) {
+    margin-bottom: 25px;
+  }
+
+  &-solution-item-title {
+    margin-bottom: 15px !important;
+    @include mix.font-size(font.$font-sizes24);
+  }
+
+  &-section-title {
+    color: var(--text-color, #000);
+    margin-bottom: 10px;
+    padding-bottom: 0;
+    @include mix.font-size(font.$font-sizes20);
+  }
+
+  &-error {
+    color: var(--error-color, #e74c3c);
+    background-color: var(--error-bg, #fde8e8);
+    padding: 15px;
+    border-radius: 4px;
+    border-left: 4px solid var(--error-color, #e74c3c);
+  }
+
+  &-solution-item-code-copy {
+    background-color: light-dark(var(--accent-color, #2980b9), var(--accent-color, #f5f5f5));
+    color: var(--nsa-white, #333333);
+    padding: 5px 10px;
+    margin-top: 5px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+
+    &:hover {
+      background-color: light-dark(var(--nsa-black, #000), var(--nsa-white, #f5f5f5));
+      color: light-dark(var(--nsa-white, #333333), var(--nsa-black, #333333));
+    }
+  }
+}
+
+// Loading spinner
+.nsa-loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  color: var(--text-color, #333333);
+}
+
+.nsa-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--spinner-bg, #e0e0e0);
+  border-top: 4px solid var(--accent-color, #2980b9);
+  border-radius: 50%;
+  animation: nsa-spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes nsa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+// Issue summary
+.nsa-issue-summary {
+  background-color: var(--summary-bg, #f5f5f5);
+  padding: 10px 15px;
+  border-radius: 4px;
+  color: var(--text-color, #333333);
+
+  p {
+    border: 1px solid var(--text-color, #e0e0e0);
+    margin-bottom: 5px;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    line-height: 1.5;
+
+    strong {
+      width: 80px;
+      flex: 0 0 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}

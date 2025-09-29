@@ -1,0 +1,619 @@
+@use '../base/variables'as *;
+@use '../base/font-size'as font-size;
+@use '../mixins/mixins'as mixins;
+@use 'sass:color';
+
+// Accessibility Report Styles
+.nsa-accessibility-report {
+  .nsa-issues-by-category {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+.nsa-audit-results {
+  margin: 1rem 0;
+
+  .nsa-category-toggle {
+    align-items: center;
+    background-color: light-dark(transparent, var(--nsa-black));
+    border: 0;
+    border-bottom: 2px solid #6a6a6a;
+    text-align: left;
+    color: light-dark(var(--nsa-black), var(--nsa-white));
+    cursor: pointer;
+    display: flex;
+    gap: 10px;
+    font-weight: $medium-weight;
+    justify-content: space-between;
+    padding: 12px 16px 12px 35px;
+    text-transform: capitalize;
+    width: 100%;
+    @include mixins.font-size(font-size.$font-sizes20);
+
+    &[aria-expanded="false"] {
+      border-bottom: 0;
+    }
+
+    .nsa-dropdown-arrow {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform 0.3s ease-in-out;
+    }
+
+    &:hover {
+      background-color: light-dark(var(--nsa-primary-rgba-5), var(--nsa-secondary));
+    }
+
+    .nsa-category-name {
+      @include mixins.font-size(font-size.$font-sizes20);
+    }
+
+    &[aria-expanded="true"] {
+      background-color: transparent;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+  }
+
+  .nsa-category-count {
+    background-color: $nsa-gray-dark-color;
+    border-radius: 4px;
+    margin-left: auto;
+    color: var(--nsa-white);
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .nsa-category-content {
+    background-color: light-dark(var(--nsa-white), var(--nsa-black));
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    border-top: none;
+    margin-top: 0;
+    padding: 10px;
+    transition: max-height 0.3s ease-in-out;
+
+    &.nsa-hidden {
+      overflow: hidden;
+      padding: 0;
+    }
+  }
+
+  .nsa-issue-header {
+    align-items: center;
+    background-color: light-dark(var(--nsa-primary-rgba-3), transparent);
+    border: 0;
+    color: light-dark(var(--nsa-text-color), var(--nsa-white));
+    cursor: pointer;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    text-align: left;
+    width: 100%;
+    @include mixins.font-size(font-size.$font-sizes16);
+
+    &:hover {
+      background-color: light-dark(var(--nsa-white), var(--nsa-text-color));
+    }
+
+    .nsa-issue-header-content {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+    }
+
+    .nsa-issue-title {
+      color: light-dark(var(--nsa-black), var(--nsa-white));
+
+      code {
+        background-color: light-dark($nsa-navy-blue-color, $nsa-primary-color);
+        border-radius: 4px;
+        color: $nsa-white;
+        padding: 0 4px;
+      }
+    }
+
+    .nsa-dropdown-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      transition: transform 0.3s ease;
+      flex-shrink: 0;
+
+      svg {
+        width: 100%;
+        height: 100%;
+        color: currentColor;
+      }
+    }
+
+    &[aria-expanded="true"] {
+      background-color: transparent;
+      border-bottom: 2px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+
+      .nsa-dropdown-arrow {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  .nsa-highlighted {
+    background-color: var(--nsa-highlight-header-bg) !important;
+    outline: 2px solid var(--nsa-outline-color) !important;
+  }
+}
+
+.nsa-issue-section {
+  margin-bottom: 10px;
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+.nsa-issue-section-title {
+  align-items: center;
+  color: light-dark(var(--nsa-text-color), var(--nsa-white));
+  display: flex;
+  font-family: $font-family;
+  font-weight: $medium-weight;
+  gap: 0.5rem;
+  margin-bottom: 10px !important;
+  margin-top: 0;
+  padding-bottom: 0;
+  @include mixins.font-size(font-size.$font-sizes18);
+
+  svg {
+    height: 24px;
+    opacity: 0.5;
+    width: 24px;
+  }
+
+  .nsa-issue-section-count {
+    font-weight: $medium-weight;
+  }
+}
+
+.nsa-issue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.nsa-issue-item {
+  border-radius: 4px;
+  overflow: hidden;
+  border-width: 1px;
+
+  &.nsa-impact-critical,
+  &.nsa-impact-serious {
+    border-left: 4px solid var(--nsa-red-color);
+  }
+
+  &.nsa-impact-moderate {
+    border-left: 4px solid var(--nsa-orange-color);
+  }
+
+  &.nsa-impact-minor {
+    border-left: 4px solid $nsa-gray-dark-color;
+  }
+
+  &.nsa-impact-passed {
+    border-left: 4px solid var(--nsa-green-color);
+  }
+}
+
+.nsa-issue-impact {
+  background-color: light-dark($nsa-milky-white-color, var(--nsa-secondary));
+  border-radius: 3px;
+  color: light-dark(var(--nsa-text-color), var(--nsa-white));
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  @include mixins.font-size(font-size.$font-sizes16);
+}
+
+.nsa-issue-details {
+  background-color: light-dark($nsa-medium-milky-white-color, $nsa-navy-blue-color);
+  color: light-dark(var(--nsa-text-color), var(--nsa-white));
+  overflow: hidden;
+  overflow-y: auto;
+  padding: 10px;
+  transition: max-height 0.3s ease-out;
+
+  &.nsa-expand-animation {
+    animation: expandDetails 0.3s ease-out;
+    max-height: 85vh;
+  }
+}
+
+.nsa-summary-item {
+  color: light-dark(var(--nsa-text-color), var(--nsa-white));
+  padding: 0 1rem;
+}
+
+@keyframes expandDetails {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nsa-issue-message {
+  color: light-dark(var(--nsa-text-color), var(--nsa-white));
+  margin: 0;
+}
+
+.nsa-issue-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 1rem;
+}
+
+.nsa-tag {
+  background-color: transparent;
+  border: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+  border-radius: 5px;
+  color: light-dark($nsa-navy-blue-color, $nsa-white);
+  font-size: 14px;
+  line-height: 1.4 !important;
+  padding: 2px 5px;
+}
+
+.nsa-issue-label {
+  color: light-dark(var(--nsa-text-color), var(--nsa-white));
+  display: block;
+  font-family: $font-family;
+  font-weight: $regular-weight;
+  margin: 5px 0 !important;
+  padding-bottom: 5px;
+  @include mixins.font-size(font-size.$font-sizes18);
+}
+
+.nsa-issue-context {
+  background-color: light-dark($nsa-milky-white-color, $nsa-white);
+  border: 2px solid light-dark($nsa-black, $nsa-gray-dark-color);
+  border-radius: 15px;
+  color: light-dark(var(--nsa-text-color), var(--nsa-white));
+  overflow-x: auto;
+  padding: 5px;
+
+  strong {
+    display: block;
+  }
+
+  .nsa-issue-code-preview {
+    background-color: $nsa-black;
+    border-radius: 8px;
+    padding: 0.5rem;
+    word-break: break-all;
+
+    .nsa-code-editor {
+      margin: 0;
+    }
+  }
+}
+
+.nsa-issue-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.nsa-issue-button {
+  align-items: center;
+  background-color: $nsa-black;
+  border: 1px solid light-dark(var(--nsa-text-color), var(--nsa-white));
+  border-radius: 5px;
+  color: var(--nsa-white);
+  cursor: pointer;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 4px 8px;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+  white-space: nowrap;
+  @include mixins.font-size(font-size.$font-sizes16);
+
+  svg {
+    height: 24px;
+    width: 24px;
+
+    path {
+      color: $nsa-white;
+    }
+  }
+
+  &:hover {
+    background-color: $nsa-gray-dark-color;
+    color: var(--nsa-white);
+    text-decoration: none !important;
+  }
+}
+
+.nsa-no-issues {
+  background-color: color-mix(in srgb, var(--nsa-warning-color) 50%, var(--nsa-white));
+  border: 1px solid $nsa-text-color;
+  border-radius: 4px;
+  padding: 1rem;
+  text-align: center;
+
+  p {
+    color: var(--nsa-text-color);
+    font-weight: $medium-weight;
+    margin: 0;
+  }
+}
+
+.nsa-form-group {
+  margin-bottom: 10px;
+
+  .nsa-error-message {
+    margin: 5px 0;
+    padding: 5px 10px;
+  }
+}
+
+.nsa-error-message {
+  background-color: color-mix(in srgb, var(--nsa-red-color) 10%, var(--nsa-white));
+  border: 1px solid var(--nsa-red-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 1rem 0;
+  @include mixins.font-size(font-size.$font-sizes14);
+
+  .nsa-error-icon {
+    flex-shrink: 0;
+    color: var(--nsa-red-color);
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .nsa-error-content {
+    flex: 1;
+  }
+
+  .nsa-error-title {
+    color: var(--nsa-red-color);
+    font-weight: $bold-weight;
+    margin: 0 0 0.5rem 0;
+    @include mixins.font-size(font-size.$font-sizes16);
+  }
+
+  .nsa-error-description {
+    color: var(--nsa-text-color);
+    font-weight: $medium-weight;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.5;
+  }
+
+  .nsa-error-details {
+    color: var(--nsa-text-color);
+    font-size: 0.875rem;
+    margin: 0 0 1rem 0;
+    opacity: 0.8;
+    font-style: italic;
+  }
+
+  .nsa-error-actions {
+    margin-top: 1rem;
+  }
+
+  &:empty {
+    display: none;
+  }
+}
+
+.nsa-form-label {
+  color: light-dark(var(--nsa-text-color), var(--nsa-white));
+  display: block;
+}
+
+.nsa-form-control {
+  margin-bottom: 5px;
+  line-height: 1.5;
+  width: 100%;
+  border: 2px solid light-dark($nsa-black, $nsa-gray-dark-color);
+  padding: 10px;
+  background: light-dark(transparent, $nsa-navy-blue-color);
+  border-radius: 4px;
+  color: light-dark(var(--nsa-text-color), var(--nsa-white));
+
+  &:focus {
+    border: 2px solid light-dark($nsa-gray-dark-color, $nsa-white);
+    box-shadow: none;
+    outline: none;
+    background: light-dark(transparent, $nsa-black);
+  }
+}
+
+// Animation for expanding/collapsing
+.nsa-category-content {
+  background-color: light-dark(var(--nsa-white), var(--nsa-secondary));
+  margin-top: 0.5rem;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding-left: 1rem;
+  transform: translateY(-10px);
+  transition: all 0.3s ease-out;
+
+  &.nsa-expand-animation {
+    max-height: 5000px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  &:not(.nsa-hidden) {
+    max-height: 5000px;
+    opacity: 1;
+    overflow-y: auto;
+    transform: translateY(0);
+  }
+}
+
+.nsa-code {
+  &-editor {
+    background: #1e1e1e;
+    border-radius: 4px;
+    color: #d4d4d4;
+    display: flex;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    max-height: 300px;
+    overflow: auto;
+  }
+
+  &-line {
+    mark {
+      background-color: light-dark(var(--nsa-text-color), var(--nsa-black));
+      color: var(--nsa-text-color);
+
+      &.nsa-code-attr {
+        color: $nsa-white;
+      }
+    }
+  }
+
+  &-line-numbers {
+    background: #252525;
+    color: #858585;
+    display: none;
+    flex-direction: column;
+    padding: 8px;
+    text-align: right;
+    user-select: none;
+    position: sticky;
+    left: 0;
+  }
+
+  &-content {
+    flex: 1;
+    padding: 8px;
+    white-space: pre-wrap;
+  }
+
+  &-line {
+    color: $nsa-white;
+    padding: 8px;
+    text-align: right;
+    user-select: none;
+    position: sticky;
+  }
+
+  &-tag {
+    color: #569cd6;
+  }
+
+  &-attr {
+    color: #9cdcfe;
+  }
+
+  &-value {
+    color: #ce9178;
+  }
+
+  &-entity {
+    color: #d7ba7d;
+  }
+
+  &-comment {
+    color: #6a9955;
+  }
+}
+
+/* Readability Styles */
+
+.nsa-readability-content {
+  .nsa-readability-metrics,
+  .nsa-readability-grade-level,
+  .nsa-readability-content-summary,
+  .nsa-readability-recommendations {
+    background-color: light-dark($nsa-white, var(--nsa-text-color));
+    border: 2px solid light-dark($nsa-black, $nsa-gray-dark-color);
+    border-radius: 15px;
+    color: light-dark(var(--nsa-text-color), var(--nsa-white));
+    padding: 10px;
+    margin-bottom: 10px;
+
+    ul {
+        padding-inline-start: 20px;
+    }
+  }
+
+  .nsa-readability-label,
+  .nsa-content-summary-label,
+  .nsa-grade-level-label {
+    max-width: 170px;
+    width: 100%;
+    display: inline-block;
+  }
+
+  .nsa-readability-value,
+  .nsa-content-summary-value,
+  .nsa-grade-level-value {
+    font-weight: $bold-weight;
+    background: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.3));
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 13px;
+  }
+
+  .nsa-readability-metric,
+  .nsa-content-summary-metric,
+  .nsa-grade-level-name,
+  .nsa-grade-level-description,
+  .nsa-grade-level-reading-level,
+  .nsa-grade-level-school-level,
+  .nsa-grade-level-age-range,
+  .nsa-grade-level-example-book,
+  .nsa-grade-level-audience {
+    margin-bottom: 10px;
+  }
+
+  .nsa-readability-subtitle {
+    margin-bottom: 10px;
+  }
+
+  .nsa-grade-level-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 10px;
+  }
+
+  .nsa-grade-level-audience {
+    color: light-dark(var(--nsa-text-color), var(--nsa-white));
+    font-weight: $medium-weight;
+    padding: 5px;
+    background: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
+    border-radius: 4px;
+    border: 1px solid light-dark($nsa-gray-dark-color, $nsa-white);
+  }
+}

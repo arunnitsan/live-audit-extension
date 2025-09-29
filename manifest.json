@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Accesstive - Accessibility Audit Extension",
   "version": "1.0.0",
-  "description": "Simple accessibility auditing tool for web developers. Scan any webpage for basic WCAG compliance issues.",
+  "description": "Chrome extension for real-time accessibility auditing using Accesstive widget design. Built with Vite + TypeScript for maintainability.",
   
   "permissions": [
     "activeTab",
@@ -12,7 +12,10 @@
     "tabs",
     "scripting",
     "sidePanel",
-    "windows" 
+    "windows",
+    "notifications",
+    "alarms",
+    "unlimitedStorage"
   ],
   
   "host_permissions": [
@@ -62,9 +65,19 @@
         "sidebar.html",
         "sidebar.css",
         "sidebar.js",
-        "audit.js"
+        "content.css",
+        "content.js",
+        "audit.js",
+        "background.js",
+        "chunks/*.js",
+        "assets/**/*",
+        "icons/**/*"
       ],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  }
 }

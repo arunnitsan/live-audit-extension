@@ -1,0 +1,77 @@
+@use '../base/variables'as *;
+@use '../base/font-size'as font;
+@use '../mixins/mixins'as mix;
+
+// Shared Variables
+$nsa-transition: all 0.3s ease;
+
+// Shared Mixins
+@mixin nsa-box-shadow {
+  box-shadow: $nsa-navy-blue-color 0 0 10px 1px;
+}
+
+// Shared Impact Styles
+.nsa-impact-critical,
+.nsa-impact-serious {
+  border: 2px solid var(--nsa-red-color);
+  color: light-dark(var(--nsa-black), var(--nsa-white));
+}
+
+.nsa-impact-moderate {
+  border: 2px solid var(--nsa-orange-color);
+  color: light-dark(var(--nsa-black), var(--nsa-white));
+}
+
+.nsa-impact-minor {
+  border: 2px solid var(--nsa-hint-color);
+  color: light-dark(var(--nsa-black), var(--nsa-white));
+}
+
+.nsa-impact-passed {
+  border: 2px solid var(--nsa-green-color);
+  color: light-dark(var(--nsa-black), var(--nsa-white));
+}
+
+// Shared Utility Classes
+.nsa-hidden {
+  display: none !important;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(100%);
+  visibility: hidden;
+}
+
+.nsa-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+// Shared Animations
+@keyframes nsa-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}

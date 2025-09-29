@@ -1,0 +1,25 @@
+/*******************************************************************************
+* Button
+*******************************************************************************/
+@use '../base/variables'as *;
+@use '../base/font-size'as font-size;
+@use '../mixins/mixins'as mixins;
+
+select.nsa-select {
+  appearance: none;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  background-color: light-dark(var(--nsa-primary-rgba-10), $nsa-gray-color);
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTMuMjM3IDcuOTcyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzc3NyIgc3Ryb2tlLXdpZHRoPSIyIiBkPSJNLjcwNC43MTFMNi42MiA2LjU2NSAxMi41MzUuNzExIiBkYXRhLW5hbWU9IlBhdGggMTQyIi8+PC9zdmc+');
+  background-position: calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 12px;
+  border-color: light-dark(var(--nsa-primary-rgba-20), $nsa-gray-dark-color);
+  color: light-dark(var(--nsa-text-color), $nsa-black);
+  min-width: 120px;
+  padding: 7px 25px 7px 10px;
+
+  .nsa-col-6 & {
+    width: 100%;
+  }
+}

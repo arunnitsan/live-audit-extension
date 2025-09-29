@@ -1,0 +1,155 @@
+@use '../base/font-size' as font-size;
+@use 'sass:map';
+@use 'sass:list';
+@use 'sass:meta';
+
+// Inlineblock
+@mixin inline-block() {
+  display: inline-block;
+  vertical-align: top;
+  zoom: 1;
+}
+
+@mixin absoluted-fullwidth {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+@mixin bg-img($bg-position, $bg-repeat, $bg-size) {
+  background-position: $bg-position;
+  background-repeat: $bg-repeat;
+  background-size: $bg-size;
+}
+
+// Placeholder mixin
+@mixin placeholder($color) {
+  ::placeholder {
+    color: $color;
+  }
+}
+
+// ----------------------------------------------------------------------
+// Transitions
+// ----------------------------------------------------------------------
+@mixin transition($property, $duration, $timing-function, $delay) {
+  transition: $property $duration $timing-function $delay;
+}
+
+@mixin columns($num, $gap) {
+  column-count: $num;
+  column-gap: $gap;
+}
+
+// Pseudo mixin. Eg. @include content (red, 10px, 100px, auto, $margin: true);
+@mixin content($bg, $br:0, $height, $width, $margin, $m: false) {
+  background: $bg;
+  border-radius: $br;
+  content: '';
+  display: block;
+  height: $height;
+  width: $width;
+
+  @if $m {
+    margin: $margin;
+  }
+}
+
+// Pseudo mixin with background image
+@mixin background-img($bg-img, $bg-position, $bg-size, $min-height, $min-width) {
+  background-image: url($bg-img);
+  background-position: $bg-position;
+  background-size: $bg-size;
+  min-height: $min-height;
+  min-width: $min-width;
+}
+
+// Alignment. Eg. @include align(center);
+@mixin align($alignment) {
+  position: absolute;
+
+  @if $alignment == vertically-center {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  @else if $alignment == horizontally-center {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  @else if $alignment == center {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+  @else {
+    @error "Invalid Alignment: `#{$alignment}`. Use 'vertically-center' or 'horizontally-center' or 'center'.";
+  }
+}
+
+// Absolute Position. Eg. @include position(absolute, top, 50%, right, 0);
+@mixin position($position, $first, $first-value, $second, $second-value) {
+  position: $position;
+
+  @if $first == top {
+    top: $first-value;
+  }
+  @else if $first == bottom {
+    bottom: $first-value;
+  }
+  @else if $first == left {
+    left: $first-value;
+  }
+  @else if $first == right {
+    right: $first-value;
+  }
+
+  @if $second == top {
+    top: $second-value;
+  }
+  @else if $second == bottom {
+    bottom: $second-value;
+  }
+  @else if $second == left {
+    left: $second-value;
+  }
+  @else if $second == right {
+    right: $second-value;
+  }
+  @else {
+    @error "Invalid Position: `#{$first}` or `#{$second}`. Example: @include position(absolute, top, top-value, right, right-value);";
+  }
+}
+
+// Utility function for setting font-size and line-height
+@mixin make-font-size($fs-font-size) {
+  @if meta.type-of($fs-font-size) == 'list' {
+    font-size: list.nth($fs-font-size, 1);
+    @if list.length($fs-font-size) > 1 {
+      line-height: list.nth($fs-font-size, 2);
+    }
+  } @else {
+    font-size: $fs-font-size;
+  }
+}
+
+// Main font-size mixin
+@mixin font-size($fs-map, $fs-breakpoints: font-size.$breakpoints) {
+    @each $fs-breakpoint, $fs-font-size in $fs-map {
+      // If the breakpoint is null, apply the font size globally
+      @if $fs-breakpoint == null {
+        @include make-font-size($fs-font-size);
+      } @else {
+        // If the breakpoint exists in $fs-breakpoints, use the value from the map
+        @if map.has-key($fs-breakpoints, $fs-breakpoint) {
+          $fs-breakpoint: map.get($fs-breakpoints, $fs-breakpoint);
+        }
+
+        // Apply font size at the specified breakpoint
+        @media screen and (min-width: $fs-breakpoint) {
+          @include make-font-size($fs-font-size);
+        }
+      }
+    }
+  }

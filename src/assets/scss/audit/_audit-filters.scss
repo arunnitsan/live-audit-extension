@@ -1,0 +1,310 @@
+@use "sass:color";
+@use '../base/variables'as *;
+@use '../base/font-size'as font-size;
+@use '../mixins/mixins'as mixins;
+
+$nsa-error-color: var(--nsa-red-color);
+$nsa-warning-color: var(--nsa-warning-color);
+$nsa-hint-color: var(--nsa-hint-color);
+$nsa-passed-color: var(--nsa-green-color);
+$nsa-best-practice-color: var(--nsa-blue-color);
+
+// Impact filters section
+.nsa-impact-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  padding: 10px;
+  border: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+  background-color: light-dark(rgba($nsa-white, 0.05), rgba($nsa-black, 0.1));
+}
+
+.nsa-impact-filter {
+  background-color: light-dark($nsa-gray-medium-color, rgba(#fff, 0.2));
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 5px 8px 5px 25px;
+  flex: 1 1 137px;
+  min-width: 137px;
+  max-width: 50%;
+  position: relative;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+
+  &__checkbox {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    position: absolute !important;
+    width: 15px !important;
+    height: 14px !important;
+    border: 2px solid light-dark($nsa-navy-blue-color, $nsa-gray-color) !important;
+    border-radius: 3px !important;
+    outline: none !important;
+    cursor: pointer !important;
+    margin: 0;
+    left: 6px;
+    transition: all 0.2s ease !important;
+
+    &:checked {
+      background-color: light-dark(var(--nsa-secondary-rgba-80), transparent);
+      border-color: $nsa-primary-color;
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: 1px;
+        left: 3px;
+        width: 5px;
+        height: 7px;
+        border-right: 2px solid $nsa-white;
+        border-bottom: 2px solid $nsa-white;
+        transform: rotate(45deg);
+      }
+
+      +.nsa-impact-filter__label .nsa-hidden {
+        display: flex !important;
+        opacity: 1;
+        transform: none;
+        visibility: visible;
+      }
+    }
+
+    &:focus-visible {
+      box-shadow: 0 0 0 2px light-dark(rgba($nsa-primary-color, 0.4), rgba($nsa-white, 0.4));
+    }
+  }
+
+  &__label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    white-space: nowrap;
+    color: light-dark($nsa-text-color, $nsa-white);
+    font-weight: $medium-weight;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    width: 100%;
+    @include mixins.font-size(font-size.$font-sizes13);
+
+    span:first-child {
+      width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    width: auto;
+    height: 20px;
+    padding: 1px 4px;
+    border-radius: 10px;
+    background-color: light-dark($nsa-gray-color, $nsa-navy-blue-color);
+    color: light-dark($nsa-black, $nsa-white);
+    font-size: 12px;
+    line-height: 1;
+
+    &.nsa-hidden {
+      display: block !important;
+    }
+  }
+
+  &--critical &__count {
+    background-color: $nsa-error-color;
+    color: $nsa-white;
+  }
+
+  &--serious &__count {
+    background-color: $nsa-error-color;
+    color: $nsa-white;
+  }
+
+  &--moderate &__count {
+    background-color: $nsa-warning-color;
+    color: $nsa-black;
+  }
+
+  &--minor &__count {
+    background-color: $nsa-hint-color;
+    color: $nsa-white;
+  }
+
+  &--passed &__count {
+    background-color: var(--nsa-green-color);
+    color: $nsa-white;
+  }
+
+  &--best-practice &__count {
+    background-color: $nsa-primary-color;
+    color: $nsa-white;
+  }
+
+  &:hover {
+    background-color: light-dark(#f7f7f7, #000);
+    border-color: light-dark($nsa-gray-color, #fff);
+  }
+}
+
+// Node navigation
+.nsa-node-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  position: absolute;
+  top: 16px;
+  right: 8px;
+
+  &__counter {
+    color: light-dark($nsa-navy-blue-color, $nsa-white);
+    font-weight: $medium-weight;
+    @include mixins.font-size(font-size.$font-sizes14);
+  }
+
+  &__controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  &__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    border: none;
+    background-color: $nsa-black;
+    border: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+    color: $nsa-white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    svg path {
+      color: $nsa-white;
+    }
+
+
+    &:hover {
+      background-color: $nsa-gray-dark-color;
+    }
+
+    &:disabled {
+      background-color: $nsa-gray-color;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+}
+
+// Node content
+.nsa-node-content {
+  display: none;
+
+  &.active {
+    display: block;
+  }
+}
+
+// Issue node group
+.nsa-issue-node-group {
+  &__header {
+    background-color: light-dark($nsa-milky-white-color, $nsa-navy-blue-color);
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .nsa-issue-title {
+      margin: 0;
+      padding-bottom: 0;
+      font-weight: $regular-weight;
+      color: light-dark($nsa-black, $nsa-white);
+      @include mixins.font-size(font-size.$font-sizes18);
+    }
+  }
+
+  &__content {
+    background-color: light-dark($nsa-medium-milky-white-color, $nsa-navy-blue-color);
+    padding: 10px;
+    margin: 5px;
+    position: relative;
+  }
+}
+
+.nsa-issue-category {
+  border-color: light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: 8px;
+    width: 20px;
+    height: 20px;
+    mask-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTYgMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZmlsbD0iIzAwN2EwMCIgZD0iTTggMUM0LjEgMSAxIDQuMSAxIDhzMy4xIDcgNyA3IDctMy4xIDctNy0zLjEtNy03LTd6bTQuMSA0LjdsLTQuOSA0LjktLjQuNGMtLjEuMS0uMy4xLS40IDBsLS40LS4zLTIuMS0yLjFjLS4xLS4xLS4xLS4zIDAtLjRsLjMtLjRjLjEtLjEuMy0uMS40IDBsMiAyTDExLjMgNWMuMS0uMS4zLS4xLjQgMGwuNC4zYy4xLjEuMS4zIDAgLjR6Ii8+PC9zdmc+');
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: cover;
+    background-color: $nsa-passed-color;
+  }
+
+  &.nsa-impact-critical,
+  &.nsa-impact-serious {
+    &::before {
+      mask-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTYgMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZmlsbD0iI2MwMCIgZD0iTTggMUM0LjEgMSAxIDQuMSAxIDhzMy4xIDcgNyA3IDctMy4xIDctNy0zLjEtNy03LTd6bS0uNDQ4IDNoLjg5NmEuNS41IDAgMDEuNDk3LjU1TDguNSA5aC0xbC0uNDQ1LTQuNDVBLjUuNSAwIDAxNy41NTIgNHpNOCAxMmExIDEgMCAxMTAtMiAxIDEgMCAwMTAgMnoiLz48L3N2Zz4=');
+      background-color: $nsa-error-color;
+    }
+  }
+
+  &.nsa-impact-moderate {
+    &::before {
+      mask-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTYgMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZmlsbD0iI2U2YjgwMCIgZD0iTTE1LjI4NiAxMi4wM0w5Ljc0OSAyLjA0QzkuMzcgMS4zNTIgOC42ODQgMS4wMDkgOCAxLjAwOXMtMS4zNjkuMzQzLTEuNzUgMS4wM0wuNzE1IDEyLjAzQy0uMDI0IDEzLjM2NC45NCAxNSAyLjQ2NCAxNWgxMS4wNzJjMS41MjQgMCAyLjQ4OC0xLjYzNiAxLjc5LTIuOTd6TTcuNTUyIDVoLjg5NmEuNS41IDAgMDEuNDk3LjU1TDguNSAxMGgtMWwtLjQ0NS00LjQ1QS41LjUgMCAwMTcuNTUyIDV6TTggMTNhMSAxIDAgMTEwLTIgMSAxIDAgMDEwIDJ6Ii8+PC9zdmc+');
+      background-color: $nsa-warning-color;
+    }
+  }
+
+  &.nsa-impact-minor {
+    &::before {
+      mask-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTYgMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZmlsbD0iY3VycmVudENvbG9yIiBkPSJNOCAyYzMuMyAwIDYgMi43IDYgNnMtMi43IDYtNiA2LTYtMi43LTYtNiAyLjctNiA2LTZtMC0xQzQuMSAxIDEgNC4xIDEgOHMzLjEgNyA3IDcgNy0zLjEgNy03LTMuMS03LTctN3oiLz48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik03IDVhMSAxIDAgMTEyIDAgMSAxIDAgMTEtMiAwem0wIDNhMSAxIDAgMTEyIDB2M2ExIDEgMCAxMS0yIDBWOHoiLz48L3N2Zz4=');
+      background-color: $nsa-hint-color;
+    }
+  }
+}
+
+.nsa-issue-node-count {
+  color: light-dark($nsa-text-color, $nsa-light-gray-color);
+  font-weight: $semibold-weight;
+  margin-left: 5px;
+  line-height: 1;
+  font-size: 14px;
+}
+
+// Improve impact filters layout on mobile
+@media (max-width: 767px) {
+  .nsa-impact-filters {
+    gap: 12px;
+    justify-content: space-between;
+
+    .nsa-impact-filter {
+      width: calc(50% - 6px);
+      max-width: 100%;
+    }
+  }
+}

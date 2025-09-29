@@ -1,0 +1,150 @@
+// Use statement for font variables and mixins (replace with actual file paths)
+@use '../base/variables'as *;
+@use '../base/font-size'as font-size;
+@use '../mixins/mixins'as mixins;
+
+// Font Faces
+@font-face {
+  font-display: swap;
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  src: url('#{$font-base-url}fonts/roboto/Roboto-Bold.woff') format('woff'),
+    url('#{$font-base-url}fonts/roboto/Roboto-Bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  src: url('#{$font-base-url}fonts/roboto/Roboto-Medium.woff') format('woff'),
+    url('#{$font-base-url}fonts/roboto/Roboto-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  src: url('#{$font-base-url}fonts/roboto/Roboto-Regular.woff') format('woff'),
+    url('#{$font-base-url}fonts/roboto/Roboto-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 300;
+  src: url('#{$font-base-url}fonts/roboto/Roboto-Light.woff') format('woff'),
+    url('#{$font-base-url}fonts/roboto/Roboto-Light.woff2') format('woff2');
+}
+
+// Base Reset
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+// Global Styles
+html {
+  scroll-behavior: smooth;
+
+  &.nsa_AccesstiveFilter-active {
+    filter: url(#nsaAccesstiveFilter) !important;
+  }
+
+  &.nsa-system-color {
+    color-scheme: light dark;
+  }
+}
+
+.nsa-accesstive-panel-wrap {
+  color: light-dark(var(--nsa-text-color), var(--nsa-white));
+
+  .t3js-icon {
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+
+  h1,h2,h3,h4, h5, h6 {
+    color: var(--nsa-white);
+    font-weight: $bold-weight;
+    margin-bottom: 0;
+    text-transform: capitalize;
+  }
+
+  p {
+    color: light-dark(var(--nsa-text-color), var(--nsa-white));
+    padding-bottom: 0;
+    margin: 0 !important;
+  }
+}
+
+.nsa-tooltip {
+  background-color: light-dark($nsa-white, $nsa-navy-blue-color);
+  border: 1px solid $nsa-white;
+  box-shadow: 0px 3px 6px var(--nsa-black-rgba-20);
+  color: light-dark($nsa-navy-blue-color, $nsa-white);
+  display: none;
+  font-family: $font-family;
+  max-width: 250px;
+  padding: 15px 14px 10px;
+  position: fixed;
+  pointer-events: none;
+  width: max-content;
+  z-index: 99999999;
+
+  p {
+    margin-bottom: 0;
+  }
+
+  * {
+    color: light-dark($nsa-navy-blue-color, $nsa-white);
+  }
+
+  .nsa-accesstive-main--system &,
+  .nsa-accesstive-main--default & {
+    color-scheme: light dark;
+  }
+
+  .nsa-accesstive-main--dark & {
+    background-color: $nsa-navy-blue-color;
+    color: $nsa-white;
+
+    * {
+      color: $nsa-white;
+    }
+  }
+
+  .nsa-accesstive-main--light & {
+    background-color: $nsa-white;
+    color: $nsa-navy-blue-color;
+
+    * {
+      color: $nsa-navy-blue-color;
+    }
+  }
+}
+
+.nsa-tooltip-header {
+  font-weight: bold;
+  margin-bottom: 5px;
+  @include mixins.font-size(font-size.$font-sizes18);
+}
+
+.nsa-tooltip-text {
+  margin-bottom: 5px;
+  @include mixins.font-size(font-size.$font-sizes14);
+}
+
+.nsa-tooltip-shortcut {
+  font-style: italic;
+  text-align: right;
+  @include mixins.font-size(font-size.$font-sizes16);
+}

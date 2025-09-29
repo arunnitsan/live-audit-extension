@@ -1,0 +1,696 @@
+@use '../base/variables'as *;
+@use '../base/font-size'as font;
+@use '../mixins/mixins'as mix;
+@use './shared'as shared;
+
+// Widget Styles
+.nsa-audit-widget {
+  color-scheme: light;
+  font-family: $font-family;
+  position: relative;
+  z-index: 9999999999;
+  @include mix.font-size(font.$font-sizes16);
+
+  code {
+    background-color: light-dark($nsa-black, var(--nsa-primary));
+    color: var(--nsa-white);
+    line-height: 1.2;
+    display: inline;
+    padding: 0 4px;
+    margin-right: 5px;
+    border-radius: 4px;
+  }
+
+  p {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    line-height: 1.5;
+    max-width: none !important;
+    width: auto;
+  }
+
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  strong {
+    font-family: $font-family;
+    font-weight: $medium-weight;
+    margin: 0;
+    padding: 0;
+  }
+
+  &--dark {
+    color-scheme: dark;
+  }
+}
+
+.nsa-audit-toggle {
+  background-color: $nsa-primary-color;
+  border: 0;
+  box-shadow: #333 0 0 10px 1px;
+  bottom: 100px;
+  color: $nsa-white;
+  cursor: pointer;
+  display: flex;
+  position: fixed;
+  right: 20px;
+  width: 80px;
+  height: 80px;
+  padding: 15px;
+  border-radius: 50%;
+  transition: shared.$nsa-transition;
+
+  &:hover {
+    background-color: $nsa-secondary-color;
+  }
+
+  &__icon {
+    align-items: center;
+    display: flex;
+  }
+
+  &__count {
+    position: absolute;
+    top: -12px;
+    background-color: $nsa-primary-color;
+    border: 1px solid $nsa-white;
+    left: -5px;
+    width: auto;
+    min-width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    padding: 5px;
+    font-weight: $bold-weight;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.nsa-audit-logo {
+  color: light-dark($nsa-black, $nsa-white);
+
+  svg {
+    line-height: 1;
+    display: block;
+    height: 40px;
+    width: 40px;
+  }
+}
+
+.nsa-audit-close-btn {
+  background: transparent;
+  border: none;
+  color: light-dark($nsa-navy-blue-color, $nsa-white);
+  cursor: pointer;
+  padding: 10px;
+  transition: all 0.3s ease;
+
+  svg {
+    line-height: 1;
+  }
+
+  &:hover {
+    color: light-dark($nsa-navy-blue-color, $nsa-light-gray-color);
+    transform: scale(1.2);
+  }
+}
+
+.nsa-audit-panel {
+  background: light-dark($nsa-white, $nsa-black);
+  bottom: 0;
+  color: light-dark($nsa-black, $nsa-white);
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  position: fixed;
+  right: 0;
+  transition: transform 0.3s ease;
+  width: 500px;
+  min-width: 300px;
+  max-width: 100%;
+  z-index: 9999;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  word-break: normal;
+  @include shared.nsa-box-shadow;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+    cursor: ew-resize;
+    z-index: 10000;
+    background-color: light-dark($nsa-black, $nsa-white);
+    z-index: 99;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 1px;
+    cursor: ew-resize;
+    z-index: 10000;
+    border: 2px solid light-dark($nsa-white, $nsa-black);
+    border-top: 0;
+    border-bottom: 0;
+  }
+}
+
+.nsa-audit-header {
+  border-bottom: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+  padding: 16px;
+
+  &__top {
+    align-items: center;
+    border-bottom: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+  }
+}
+
+.nsa-audit-title {
+  color: light-dark($nsa-text-color, $nsa-white);
+  font-weight: $medium-weight;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  @include mix.font-size(font.$font-sizes20);
+}
+
+.nsa-audit-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nsa-button-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: space-between;
+}
+
+.nsa-audit-standard,
+.nsa-audit-language,
+.nsa-audit-disability {
+  appearance: none;
+  border: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+  background-image: url(data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTMuMjM3IDcuOTcyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzc3NyIgc3Ryb2tlLXdpZHRoPSIyIiBkPSJNLjcwNC43MTFMNi42MiA2LjU2NSAxMi41MzUuNzExIiBkYXRhLW5hbWU9IlBhdGggMTQyIi8+PC9zdmc+);
+  background-position: calc(100% - 7px) 50%;
+  background-repeat: no-repeat;
+  background-size: 12px;
+  background-color: transparent;
+  border-radius: 4px;
+  margin-bottom: 0;
+  width: 100%;
+  padding: 8px;
+  padding-right: 30px;
+  color: light-dark($nsa-black, $nsa-white);
+  @include mix.font-size(font.$font-sizes14);
+
+  option,
+  optgroup {
+    background-color: light-dark($nsa-white, $nsa-black);
+  }
+
+  &:hover,
+  &:focus,
+  &:active,
+  &:focus-visible {
+    box-shadow: none;
+    outline: none;
+    background-color: transparent;
+  }
+}
+
+.nsa-audit-language {
+  border-width: 1px;
+  padding: 8px 25px 8px 5px;
+}
+
+.nsa-disability-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-right: 8px;
+  min-width: 160px;
+  max-width: 200px;
+}
+
+.nsa-disability-icon {
+  position: absolute !important;
+  left: 8px;
+  top: 18px;
+  pointer-events: none;
+  z-index: 1;
+  color: light-dark($nsa-navy-blue-color, $nsa-white);
+}
+
+.nsa-audit-disability {
+  border-width: 1px;
+  padding: 8px 35px 8px 30px;
+  margin-right: 0;
+  min-width: 100%;
+  max-width: 100%;
+}
+
+.nsa-disability-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+  color: light-dark($nsa-navy-blue-color, $nsa-white);
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.nsa-audit-label {
+  color: light-dark($nsa-navy-blue-color, $nsa-white);
+  @include mix.font-size(font.$font-sizes16);
+}
+
+.nsa-audit-filter {
+  align-items: center;
+  border: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+
+  &__checkbox {
+    height: 16px;
+    width: 16px;
+  }
+
+  &__label {
+    color: light-dark($nsa-text-color, $nsa-white);
+    font-weight: $medium-weight;
+    @include mix.font-size(font.$font-sizes14);
+  }
+}
+
+.nsa-audit-scan-btn {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  text-transform: capitalize;
+  transition: shared.$nsa-transition;
+  width: 100%;
+  padding: 3px 13px;
+  @include mix.font-size(font.$font-sizes18);
+}
+
+.nsa-audit-content {
+  max-height: calc(100% - 264px);
+  overflow: auto;
+  padding: 16px;
+  flex: 1;
+
+  .nsa-code-editor {
+    margin: 10px 0;
+  }
+
+  .accesstive-color-wrapper {
+    display: none;
+  }
+}
+
+.nsa-audit-footer {
+  border-top: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+
+  &__link {
+    color: light-dark($nsa-navy-blue-color, $nsa-white);
+    text-decoration: none;
+    font-weight: $medium-weight;
+    border-bottom: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+    @include mix.font-size(font.$font-sizes16);
+
+    &:hover {
+      color: light-dark($nsa-navy-blue-color, $nsa-light-gray-color);
+      border-bottom-color: $nsa-primary-color;
+    }
+  }
+}
+
+.nsa-audit-percentage {
+  line-height: 1;
+}
+
+.percentage-status-chart {
+  width: 100%;
+  height: 100%;
+
+  .percentage {
+    fill: light-dark($nsa-black, $nsa-white);
+    font-weight: $bold-weight;
+  }
+}
+
+.nsa-audit-count {
+  background-color: light-dark($nsa-medium-milky-white-color, $nsa-navy-blue-color);
+  border: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+  color: light-dark($nsa-black, $nsa-white);
+  text-align: center;
+  transition: transform 0.3s ease;
+  display: flex;
+  border-radius: 4px;
+  flex-direction: column;
+  padding: 5px;
+  align-items: center;
+  justify-content: center;
+  gap: 0 4px;
+  @include mix.font-size(font.$font-sizes16);
+
+  &__value {
+    color: light-dark($nsa-black, $nsa-white);
+    font-weight: $bold-weight;
+    line-height: 1 !important;
+    @include mix.font-size(font.$font-sizes46);
+  }
+
+  &__label {
+    color: light-dark($nsa-navy-blue-color, $nsa-white);
+    width: 100%;
+    border-bottom: 1px solid #6a6a6a;
+    padding-bottom: 5px;
+    @include mix.font-size(font.$font-sizes16);
+  }
+}
+
+.nsa-audit-stats {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.nsa-audit-stat {
+  align-items: center;
+  display: flex;
+  border-width: 1px;
+  justify-content: center;
+  padding: 3px;
+  text-align: center;
+
+  .nsa-issue-item & {
+    padding: 0 4px;
+    @include mix.font-size(font.$font-sizes14);
+  }
+
+  &__value {
+    display: block;
+    font-weight: $bold-weight;
+    @include mix.font-size(font.$font-sizes18);
+  }
+
+  &__label {
+    margin-right: 5px;
+  }
+}
+
+.nsa-audit-loader {
+  align-items: center;
+  background: light-dark(rgba(#fff, 0.95), var(--nsa-secondary-rgba-80));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  justify-content: center;
+  left: 0;
+  position: absolute;
+  top: 0;
+  transition: shared.$nsa-transition;
+  width: 100%;
+  z-index: 9999;
+
+  &__spinner {
+    animation: spin 1s linear infinite;
+    border: 3px solid light-dark($nsa-gray-color, $nsa-white);
+    border-radius: 50%;
+    border-top: 3px solid $nsa-black;
+    height: 40px;
+    width: 40px;
+  }
+
+  &__text {
+    color: light-dark($nsa-black, $nsa-white);
+    font-weight: $semibold-weight;
+    @include mix.font-size(font.$font-sizes16);
+  }
+}
+
+.nsa-hidden-elements-section {
+  margin-bottom: 16px;
+}
+
+/*Additional Information*/
+.nsa-issue-why-matters-container,
+.nsa-issue-message-container,
+.nsa-issue-guidelines-container,
+.nsa-issue-algorithm-container,
+.nsa-issue-fix-container,
+.nsa-issue-compliance-container,
+.nsa-issue-wcag-container {
+  @include mix.font-size(font.$font-sizes14);
+
+  >ul,
+  ul,
+  >ol,
+  ol {
+    list-style: none;
+    margin-bottom: 10px;
+    border-bottom: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+    padding-bottom: 10px;
+    padding-left: 0;
+
+    a {
+      color: light-dark($nsa-navy-blue-color, $nsa-white);
+      text-decoration: underline;
+      font-weight: $medium-weight;
+      @include mix.font-size(font.$font-sizes14);
+
+      &:hover {
+        color: light-dark($nsa-navy-blue-color, $nsa-light-gray-color);
+      }
+    }
+
+    li {
+      padding-left: 15px !important;
+      position: relative;
+      font-weight: $medium-weight;
+      @include mix.font-size(font.$font-sizes14);
+
+      &::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background-color: light-dark($nsa-black, $nsa-white);
+        position: absolute;
+        left: 0;
+        top: 8px;
+      }
+    }
+
+    ul:last-of-type {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+
+    caption {
+      font-weight: $bold-weight;
+      margin-bottom: 10px;
+    }
+
+    th,
+    td {
+      border: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+      padding: 5px;
+    }
+  }
+
+  dl {
+    margin-bottom: 10px;
+    border: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+    padding: 10px;
+    @include mix.font-size(font.$font-sizes14);
+
+    dd,
+    dt {
+      margin-bottom: 8px;
+      @include mix.font-size(font.$font-sizes14);
+    }
+
+    dt {
+      font-weight: $bold-weight;
+      margin-bottom: 0;
+    }
+  }
+
+  .nsa-audit-content {
+    background-color: light-dark($nsa-white, $nsa-black);
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 4px;
+    @include mix.font-size(font.$font-sizes16);
+
+    p {
+      padding: 0;
+      margin: 5px 0;
+    }
+
+    a {
+      color: light-dark($nsa-navy-blue-color, $nsa-white);
+      text-decoration: underline;
+      font-weight: $medium-weight;
+      @include mix.font-size(font.$font-sizes14);
+
+      &:hover {
+        color: light-dark($nsa-navy-blue-color, $nsa-light-gray-color);
+      }
+    }
+
+    ul:last-of-type {
+      margin-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .nsa-audit-content {
+      background-color: light-dark($nsa-white, #333);
+    }
+
+    .note {
+      border: 1px solid $nsa-gray-dark-color;
+      background-color: light-dark($nsa-medium-milky-white-color, #333);
+      margin: 15px 0;
+      padding: 10px;
+    }
+
+    .example {
+      .good,
+      .bad {
+        position: relative;
+        padding-left: 30px;
+
+        &::before {
+          content: '';
+          position: absolute;
+          background-color: var(--nsa-green-color);
+          width: 20px;
+          height: 20px;
+          left: 0;
+          top: 1px;
+          mask-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTYgMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0iY3VycmVudENvbG9yIj48cGF0aCBkPSJNMTIuMSA1LjNsLS40LS4zYy0uMS0uMS0uMy0uMS0uNCAwTDYuNiA5LjhsLTItMmMtLjEtLjEtLjMtLjEtLjQgMGwtLjMuNGMtLjEuMS0uMS4zIDAgLjRMNiAxMC43bC40LjNjLjEuMS4zLjEuNCAwbC40LS40IDQuOS00LjljLjEtLjEuMS0uMyAwLS40eiIvPjxwYXRoIGQ9Ik04IDJjMy4zIDAgNiAyLjcgNiA2cy0yLjcgNi02IDYtNi0yLjctNi02IDIuNy02IDYtNm0wLTFDNC4xIDEgMSA0LjEgMSA4czMuMSA3IDcgNyA3LTMuMSA3LTctMy4xLTctNy03eiIvPjwvZz48L3N2Zz4=');
+        }
+      }
+
+      .bad {
+        &::before {
+          background-color: var(--nsa-red-color);
+          mask-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTYgMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0iY3VycmVudENvbG9yIj48cGF0aCBkPSJNOCAyYzMuMyAwIDYgMi43IDYgNnMtMi43IDYtNiA2LTYtMi43LTYtNiAyLjctNiA2LTZtMC0xQzQuMSAxIDEgNC4xIDEgOHMzLjEgNyA3IDcgNy0zLjEgNy03LTMuMS03LTctN3oiLz48Y2lyY2xlIGN4PSI4IiBjeT0iMTEiIHI9IjEiLz48cGF0aCBkPSJNOC41IDloLTFsLS40NDUtNC40NUEuNS41IDAgMDE3LjU1MiA0aC44OTZhLjUuNSAwIDAxLjQ5Ny41NUw4LjUgOXoiLz48L2c+PC9zdmc+');
+        }
+      }
+    }
+  }
+}
+
+.nsa-issue-compliance-container {
+  ul li {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+}
+
+/*Download PDF*/
+.nsa-form-actions {
+  margin-top: 15px;
+}
+
+.nsa-btn-pdf-download,
+.nsa-btn-otp-verify {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .nsa-btn-loader,
+  svg {
+    line-height: 1;
+  }
+
+  .nsa-btn-loader svg {
+    animation: spin 1s infinite linear;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.nsa-impact-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+  background-color: light-dark($nsa-light-gray-color, $nsa-gray-dark-color);
+}
+
+.nsa-expand-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 5px;
+  border-bottom: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+  background-color: light-dark($nsa-white, $nsa-black);
+
+  .nsa-btn {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+}

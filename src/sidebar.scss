@@ -1,0 +1,82 @@
+/* Accesstive - Live Audit Sidebar Styles */
+
+/* Import main audit styles */
+@use './assets/scss/style-audit.scss';
+
+/* Sidebar-specific styles */
+.nsa-audit-widget--sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 500px;
+  height: 100vh;
+  z-index: 2147483647;
+  background: var(--nsa-bg-color, #ffffff);
+  border-left: 1px solid var(--nsa-border-color, #e0e0e0);
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.nsa-audit-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.nsa-audit-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.nsa-audit-results {
+  margin-top: 16px;
+}
+
+/* Responsive adjustments for sidebar */
+@media (max-width: 768px) {
+  .nsa-audit-widget--sidebar {
+    width: 100vw;
+    right: 0;
+  }
+}
+
+/* Dark theme adjustments for sidebar */
+.nsa-audit-widget--dark.nsa-audit-widget--sidebar {
+  background: var(--nsa-bg-color-dark, #1a1a1a);
+  border-left-color: var(--nsa-border-color-dark, #333333);
+}
+
+/* Ensure proper scrolling in sidebar */
+.nsa-audit-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.nsa-audit-content::-webkit-scrollbar-track {
+  background: var(--nsa-scrollbar-track, #f1f1f1);
+}
+
+.nsa-audit-content::-webkit-scrollbar-thumb {
+  background: var(--nsa-scrollbar-thumb, #c1c1c1);
+  border-radius: 3px;
+}
+
+.nsa-audit-content::-webkit-scrollbar-thumb:hover {
+  background: var(--nsa-scrollbar-thumb-hover, #a8a8a8);
+}
+
+/* Dark theme scrollbar */
+.nsa-audit-widget--dark .nsa-audit-content::-webkit-scrollbar-track {
+  background: var(--nsa-scrollbar-track-dark, #2a2a2a);
+}
+
+.nsa-audit-widget--dark .nsa-audit-content::-webkit-scrollbar-thumb {
+  background: var(--nsa-scrollbar-thumb-dark, #555555);
+}
+
+.nsa-audit-widget--dark .nsa-audit-content::-webkit-scrollbar-thumb:hover {
+  background: var(--nsa-scrollbar-thumb-hover-dark, #777777);
+}

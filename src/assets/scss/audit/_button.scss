@@ -1,0 +1,221 @@
+/*******************************************************************************
+* Button
+*******************************************************************************/
+
+// Ensure you import your variables before using them
+@use '../base/variables'as *;
+@use '../base/font-size'as font-size;
+@use '../mixins/mixins'as mixins;
+
+.nsa-btn {
+  background-color: transparent !important;
+  border: 0;
+  display: inline-block;
+  box-shadow: none;
+  cursor: pointer;
+  font-family: $font-family;
+  text-decoration: none;
+  transition: all 0.3s ease-in-out 0s;
+  @include mixins.font-size(font-size.$font-sizes16);
+
+  * {
+    transition: all 0.3s ease-in-out 0s;
+  }
+
+  &--primary,
+  &--outline {
+    cursor: pointer;
+    font-family: $font-family;
+    padding: 10px 13px;
+    transition: all 0.3s ease-in-out 0s;
+    @include mixins.font-size(font-size.$font-sizes16);
+  }
+
+  &--primary {
+    background-color: light-dark(var(--nsa-black), var(--nsa-white)) !important;
+    border: 2px solid light-dark(var(--nsa-black), var(--nsa-white)) !important;
+    border-radius: 4px;
+    color: light-dark(var(--nsa-white), var(--nsa-black)) !important;
+    font-weight: $medium-weight;
+    text-transform: uppercase;
+
+    &.nsa--active,
+    &:hover {
+      background-color: light-dark(var(--nsa-white), var(--nsa-black)) !important;
+      color: light-dark(var(--nsa-black), var(--nsa-white)) !important;
+
+      * {
+        background-color: transparent !important;
+        color: light-dark(var(--nsa-black), var(--nsa-white)) !important;
+      }
+    }
+
+    * {
+      background-color: transparent !important;
+      color: light-dark(var(--nsa-white), var(--nsa-black)) !important;
+      transition: all 0.3s ease-in-out 0s;
+    }
+  }
+
+  &--primary-light {
+    background-color: light-dark(var(--nsa-white), var(--nsa-black)) !important;
+    border: 2px solid light-dark(var(--nsa-black), var(--nsa-white)) !important;
+    border-radius: 4px;
+    color: light-dark($nsa-text-color, $nsa-white) !important;
+    font-family: $font-family;
+    font-weight: $medium-weight;
+    padding: 10px 13px;
+    transition: all 0.3s ease-in-out 0s;
+    @include mixins.font-size(font-size.$font-sizes16);
+
+    &.nsa--active,
+    &:hover {
+      background-color: light-dark(var(--nsa-black), var(--nsa-white)) !important;
+      color: light-dark(var(--nsa-white), var(--nsa-black)) !important;
+
+      * {
+        background-color: transparent !important;
+        color: light-dark(var(--nsa-white), var(--nsa-black)) !important;
+      }
+    }
+
+    * {
+      background-color: transparent !important;
+      color: light-dark($nsa-text-color, $nsa-white) !important;
+      transition: all 0.3s ease-in-out 0s;
+    }
+  }
+
+  &--outline {
+    border: 2px solid rgba(var(--nsa-primary), 0.2);
+    border-radius: 4px;
+    color: var(--nsa-text-color);
+
+    &.nsa--active,
+    &:hover {
+      background-color: light-dark(var(--nsa-black), var(--nsa-white));
+      color: light-dark(var(--nsa-white), var(--nsa-black));
+
+      * {
+        background-color: transparent !important;
+        color: light-dark(var(--nsa-white), var(--nsa-black)) !important;
+      }
+    }
+  }
+
+  &__active-state {
+    display: inline-flex;
+    font-family: $font-family;
+    height: 24px;
+    padding: 2px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 24px;
+  }
+}
+
+.nsa-btn__active-state,
+.nsa-more-options-trigger {
+  align-items: center;
+  justify-content: center;
+}
+
+.nsa-more-options-trigger {
+  cursor: pointer;
+  display: flex;
+  opacity: 0;
+  padding-bottom: 5px;
+  padding-top: 5px;
+  pointer-events: none;
+  visibility: hidden;
+  position: relative;
+  transition: all 0.2s ease 0s;
+  outline: 2px dashed transparent;
+  @include mixins.font-size(font-size.$font-sizes14);
+
+  &:focus-visible {
+    outline-color: inherit;
+  }
+
+  svg {
+    margin-left: 7px;
+  }
+
+  .nsa-arrow {
+    position: relative;
+    padding-right: 18px;
+  }
+
+  .nsa-arrow::after {
+    background-color: currentColor;
+    content: '';
+    height: 10px;
+    left: calc(100% - 12px);
+    mask-image: url('data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgOS44MTEgOS41IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTkuODExIDQuNzVsLS41My41My00IDRBLjc1Ljc1IDAgMDE0LjIyIDguMjJMNi45NCA1LjVILjc1YS43NS43NSAwIDExMC0xLjVoNi4xOUw0LjIyIDEuMjhBLjc1Ljc1IDAgMDE1LjI4MS4yMmw0IDR6Ii8+PC9zdmc+');
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: cover;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: all 0.3s ease-in-out 0s;
+    width: 10px;
+  }
+
+  &:hover .nsa-arrow::after {
+    left: calc(100% - 9px);
+  }
+}
+
+.nsa--active+.nsa-more-options-trigger {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.nsa-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+
+  button {
+    flex-grow: 1;
+  }
+
+  @media (min-width: 768px) {
+    gap: 10px;
+  }
+}
+
+button.nsa-btn:disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.nsa-audit-pdf-btn,
+.nsa-audit-share-btn,
+.nsa-audit-theme-btn {
+  background-color: light-dark(var(--nsa-white), var(--nsa-black));
+  border-radius: 4px;
+  border: 1px solid light-dark(var(--nsa-black), var(--nsa-white));
+  color: light-dark(var(--nsa-text-color), var(--nsa-white));
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  margin-right: 5px;
+  transition: all 0.3s ease-in-out 0s;
+
+  &:hover {
+    color: light-dark(var(--nsa-black), var(--nsa-white));
+    transform: scale(1.05);
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+    max-width: none;
+  }
+}
