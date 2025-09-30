@@ -7,12 +7,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
   plugins: [
-    legacy({
-      targets: ['Chrome >= 88'],
-      additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
-      modernPolyfills: true,
-      renderLegacyChunks: false
-    })
+    // Removed legacy plugin - not needed for Chrome extensions
   ],
   build: {
     outDir: 'dist',
@@ -81,20 +76,10 @@ export default defineConfig({
         return false
       }
     },
-    // Ensure we don't minify too aggressively for Chrome extensions
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: false, // Keep console logs for debugging
-        drop_debugger: false
-      },
-      mangle: {
-        // Don't mangle Chrome extension APIs
-        reserved: ['chrome', 'browser']
-      }
-    },
-    // Source maps for debugging
-    sourcemap: true,
+    // Use esbuild for much faster builds (10x faster than terser)
+    minify: 'esbuild',
+    // Source maps only in development
+    sourcemap: process.env.NODE_ENV === 'development',
     // Target modern browsers but avoid import.meta
     target: 'es2020',
     // Ensure proper module format

@@ -43,6 +43,9 @@ class NsaTooltipManager extends NsaBaseAccesstive {
   private languageDropdown: HTMLSelectElement | null = null;
   private disabilityDropdown: HTMLSelectElement | null = null;
   private readonly aiSolutionManager: NsaAiSolutionManager;
+  // Rate limiting for content script calls
+  private contentScriptPending: Set<string> = new Set();
+  private failedSelectors: Set<string> = new Set();
 
   constructor() {
     super();
@@ -68,6 +71,121 @@ class NsaTooltipManager extends NsaBaseAccesstive {
     this.nsaSetupEventListeners();
     this.nsaLoadStoredAuditData();
     this.nsaSetupHighlightButtons();
+    this.nsaSetupGlobalTooltipHandlers();
+  }
+  
+  /**
+   * Setup global tooltip handlers for better UX
+   */
+  private nsaSetupGlobalTooltipHandlers(): void {
+    // Close all tooltips on Escape key
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        this.nsaCloseAllTooltips();
+      }
+    });
+    
+    // Close tooltips when clicking outside
+    document.addEventListener('click', (e: MouseEvent) => {
+      const target = e.target as Element;
+      // Don't close if clicking on a tooltip icon or tooltip content
+      if (!target.closest('.nsa-audit-tooltip-icon') && 
+          !target.closest('[data-tippy-root]')) {
+        this.nsaCloseAllTooltips();
+      }
+    });
+    
+    // Update tooltip positions on window resize with optimized debounce
+    let resizeTimeout: number;
+    let resizeAnimationFrame: number;
+    window.addEventListener('resize', () => {
+      // Cancel any pending updates
+      clearTimeout(resizeTimeout);
+      if (resizeAnimationFrame) {
+        cancelAnimationFrame(resizeAnimationFrame);
+      }
+      
+      // Immediate update for responsive feel
+      resizeAnimationFrame = requestAnimationFrame(() => {
+        this.nsaUpdateAllTooltipPositions();
+      });
+      
+      // Final update after resize settles
+      resizeTimeout = window.setTimeout(() => {
+        this.nsaUpdateAllTooltipPositions();
+      }, 100);
+    });
+    
+    // Also update on scroll (for fixed positioning)
+    let scrollTimeout: number;
+    window.addEventListener('scroll', () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = window.setTimeout(() => {
+        this.nsaUpdateAllTooltipPositions();
+      }, 50);
+    }, { passive: true });
+    
+    // Update tooltip positions when sidebar opens/closes
+    this.shadowRoot?.addEventListener('nsaSidebarToggled', () => {
+      setTimeout(() => {
+        this.nsaUpdateAllTooltipPositions();
+      }, 300); // Wait for sidebar animation
+    });
+    
+    // Listen for DOM mutations that might affect layout
+    const observer = new MutationObserver(() => {
+      // Debounced update
+      clearTimeout(resizeTimeout);
+      resizeTimeout = window.setTimeout(() => {
+        this.nsaUpdateAllTooltipPositions();
+      }, 200);
+    });
+    
+    // Observe sidebar for size changes
+    const sidebarWidget = document.getElementById('nsaAuditWidget');
+    if (sidebarWidget) {
+      observer.observe(sidebarWidget, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+      });
+    }
+  }
+  
+  /**
+   * Update positions of all tooltips (visible and hidden)
+   * Uses requestAnimationFrame for smooth, performance-optimized updates
+   */
+  private nsaUpdateAllTooltipPositions(): void {
+    // Use requestAnimationFrame for smooth updates
+    requestAnimationFrame(() => {
+      // Update each tooltip instance (don't close them)
+      this.tippyMap.forEach((instance) => {
+        try {
+          // Force position recalculation
+          if (instance.popperInstance) {
+            instance.popperInstance.forceUpdate();
+          }
+          
+          // If tooltip is visible, ensure it stays properly positioned
+          if (instance.state.isVisible) {
+            instance.popperInstance?.update();
+          }
+        } catch (error) {
+          // Silently handle errors
+        }
+      });
+    });
+  }
+  
+  /**
+   * Close all open tooltips
+   */
+  public nsaCloseAllTooltips(): void {
+    this.tippyMap.forEach((instance) => {
+      if (instance.state.isVisible) {
+        instance.hide();
+      }
+    });
   }
 
   private nsaCacheElements(): void {
@@ -309,9 +427,18 @@ class NsaTooltipManager extends NsaBaseAccesstive {
       return impactFilters[issue.impact];
     };
 
+    // 🚀 PERFORMANCE: Cache selector lookups to avoid repeated queries
+    const selectorCache = new Map<string, Element[]>();
+
     this.issues.forEach(issue => {
       try {
-        const elements = this.findElementsBySelector(issue.selector);
+        // Use cached elements if available
+        let elements = selectorCache.get(issue.selector);
+        if (!elements) {
+          elements = this.findElementsBySelector(issue.selector);
+          selectorCache.set(issue.selector, elements);
+        }
+
         elements.forEach(element => {
           if (!elementIssuesMap.has(element)) {
             elementIssuesMap.set(element, []);
@@ -377,7 +504,7 @@ class NsaTooltipManager extends NsaBaseAccesstive {
       // Skip if no issues
       if (!issues || issues.length === 0) return;
 
-      // Double-check that we have issues with valid impacts (not passed or null)
+      // Only violations and incomplete: critical, serious, moderate, minor
       const validIssues = issues.filter(issue =>
         issue.impact &&
         issue.impact !== 'passed' &&
@@ -390,6 +517,11 @@ class NsaTooltipManager extends NsaBaseAccesstive {
       // Skip SOURCE tags inside PICTURE
       if (element.tagName === 'SOURCE' && element.closest('picture')) return;
 
+      // ⚠️ CRITICAL: Validate element is visible and properly positioned
+      if (!this.isElementValidForTooltip(element)) {
+        return;
+      }
+
       // First, remove any existing tooltip to avoid duplicates
       this.removeTooltipFromElement(element);
 
@@ -401,25 +533,32 @@ class NsaTooltipManager extends NsaBaseAccesstive {
 
       if (isVoidElement) {
         if (validIssues.some(issue => issue.impact !== 'passed')) {
-          // New approach: Add tooltip as a sibling instead of wrapping
-          tooltipIcon.className += ' nsa-tooltip-sibling';
+          // Wrap void element in a relative positioned container
+          const wrapper = document.createElement('span');
+          wrapper.className = 'nsa-tooltip-wrapper';
+          wrapper.style.position = 'relative';
+          wrapper.style.display = 'inline-block';
+          
           // Add data attribute to link tooltip to its target element
           tooltipIcon.setAttribute('data-target-element-id', this.generateUniqueId(element));
-          // Store original element tag for future reference
           tooltipIcon.setAttribute('data-original-element', element.tagName.toLowerCase());
-
-          // Insert tooltip after the void element
-          element.parentNode?.insertBefore(tooltipIcon, element.nextSibling);
-
+          
           // Apply the unique ID to target element if it doesn't have one yet
           if (!element.id && !element.getAttribute('data-nsa-element-id')) {
             const uniqueId = this.generateUniqueId(element);
             element.setAttribute('data-nsa-element-id', uniqueId);
           }
+          
+          // Insert wrapper before element and move element into wrapper
+          element.parentNode?.insertBefore(wrapper, element);
+          wrapper.appendChild(element);
+          wrapper.appendChild(tooltipIcon);
         } else {
           return;
         }
       } else {
+        // Simple inline append - icon flows naturally with content
+        // No need to modify parent styles
         element.appendChild(tooltipIcon);
       }
 
@@ -441,6 +580,52 @@ class NsaTooltipManager extends NsaBaseAccesstive {
   }
 
   // Generate a consistent unique ID for an element
+  /**
+   * Validate if element is suitable for tooltip attachment
+   * Prevents attaching tooltips to hidden, absolutely positioned, or problematic elements
+   */
+  private isElementValidForTooltip(element: Element): boolean {
+    try {
+      const htmlElement = element as HTMLElement;
+      
+      // Check if element is visible
+      const rect = htmlElement.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) {
+        return false; // Element has no dimensions
+      }
+      
+      // Check computed styles
+      const styles = window.getComputedStyle(htmlElement);
+      
+      // Skip hidden elements
+      if (styles.display === 'none' || styles.visibility === 'hidden' || styles.opacity === '0') {
+        return false;
+      }
+      
+      // Skip elements that are positioned off-screen or have fixed/absolute positioning
+      // that might cause tooltip positioning issues
+      const position = styles.position;
+      if (position === 'fixed' || position === 'absolute') {
+        // Only skip if the element is positioned off-screen
+        if (rect.top < -1000 || rect.left < -1000 || 
+            rect.top > window.innerHeight + 1000 || 
+            rect.left > window.innerWidth + 1000) {
+          return false;
+        }
+      }
+      
+      // Skip elements that are too small (likely hidden or decorative)
+      if (rect.width < 2 && rect.height < 2) {
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      // If we can't validate, skip it
+      return false;
+    }
+  }
+
   private generateUniqueId(element: Element): string {
     // Use existing ID if available
     if (element.id) return element.id;
@@ -459,6 +644,22 @@ class NsaTooltipManager extends NsaBaseAccesstive {
   private nsaCreateTooltipIcon(issues: AccessibilityIssue[]): HTMLElement {
     const tooltipIcon = document.createElement('span');
     tooltipIcon.className = `${this.nsaTooltipIconClass} nsa-impact-${issues[0].impact}`;
+    
+    // Inline-block positioning for maximum compatibility
+    tooltipIcon.style.display = 'inline-flex';
+    tooltipIcon.style.cursor = 'pointer';
+    tooltipIcon.style.transition = 'all 0.2s ease';
+    tooltipIcon.style.margin = '0 0 0 8px';
+    tooltipIcon.style.verticalAlign = 'middle';
+    tooltipIcon.style.position = 'relative'; // Anchor for tippy positioning
+    
+    // Hover effect
+    tooltipIcon.addEventListener('mouseenter', () => {
+      tooltipIcon.style.transform = 'scale(1.15)';
+    });
+    tooltipIcon.addEventListener('mouseleave', () => {
+      tooltipIcon.style.transform = 'scale(1)';
+    });
 
     let iconSvg = '';
     const title = issues[0].category.toLowerCase();
@@ -483,10 +684,11 @@ class NsaTooltipManager extends NsaBaseAccesstive {
 
     const iconContainer = document.createElement('div');
     iconContainer.innerHTML = iconSvg;
-    iconContainer.style.width = '25px';
-    iconContainer.style.height = '25px';
-    iconContainer.style.display = 'inline-block';
-    iconContainer.style.verticalAlign = 'middle';
+    iconContainer.style.width = '22px';
+    iconContainer.style.height = '22px';
+    iconContainer.style.display = 'flex';
+    iconContainer.style.alignItems = 'center';
+    iconContainer.style.justifyContent = 'center';
     iconContainer.style.lineHeight = '1';
 
     tooltipIcon.appendChild(iconContainer);
@@ -614,6 +816,7 @@ class NsaTooltipManager extends NsaBaseAccesstive {
         this.updateTooltipIcon(tooltipIcon, issue);
 
         // Use the shared template for issue details
+        // Set dropdown to FALSE so details are visible immediately
         return renderIssueDetails(
           issue,
           index,
@@ -623,7 +826,7 @@ class NsaTooltipManager extends NsaBaseAccesstive {
             chevronDownIcon: chevronDownIcon,
             chevronUpIcon: chevronUpIcon,
             showButtons: true,
-            dropdown: true
+            dropdown: false  // FALSE = show details immediately
           }
         );
       };
@@ -748,14 +951,76 @@ class NsaTooltipManager extends NsaBaseAccesstive {
         content: tooltipContainer,
         allowHTML: true,
         interactive: true,
-        placement: 'auto',
+        // Smart placement: try top first, then bottom, right, left
+        placement: 'top',
+        popperOptions: {
+          modifiers: [
+            {
+              name: 'flip',
+              options: {
+                fallbackPlacements: ['bottom', 'right', 'left', 'top'],
+                padding: 8,
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                boundary: 'viewport',
+                padding: 8,
+                altAxis: true,
+                tether: false, // Allow tooltip to break free if needed
+              },
+            },
+            {
+              name: 'offset',
+              options: {
+                offset: [0, 12], // Increased spacing for better visibility
+              },
+            },
+            {
+              name: 'computeStyles',
+              options: {
+                adaptive: true, // Adapt to scroll containers
+                roundOffsets: ({ x, y }: any) => ({
+                  x: Math.round(x),
+                  y: Math.round(y),
+                }),
+              },
+            },
+          ],
+          strategy: 'fixed', // Fixed positioning for consistent behavior across resize
+        },
         theme: 'nsa-audit',
-        trigger: 'click mouseenter focus',
-        delay: [100, 200],
+        // Only click to open - no accidental hover triggers
+        trigger: 'click',
+        // Hide when clicking outside
+        hideOnClick: true,
+        // Animation for smooth UX
+        animation: 'shift-toward-subtle',
+        duration: [200, 150],
         zIndex: 9999999999,
         maxWidth: 480,
+        // Always append to document.body for most reliable positioning
         appendTo: () => document.body,
-        onShow: () => {
+        // SINGLETON: Close other tooltips when opening this one
+        onCreate: (instance) => {
+          instance.popper.addEventListener('click', (e) => {
+            e.stopPropagation();
+          });
+        },
+        onShow: (instance) => {
+          // Close all other tooltips first (singleton behavior)
+          this.tippyMap.forEach((otherInstance, element) => {
+            if (otherInstance !== instance && otherInstance.state.isVisible) {
+              otherInstance.hide();
+            }
+          });
+          
+          // Force position update when showing
+          setTimeout(() => {
+            instance.popperInstance?.update();
+          }, 10);
+          
           try {
             if (tooltipIcon.parentElement) {
               const storedIndex = this.issueIndexMap.get(tooltipIcon.parentElement);
@@ -782,6 +1047,10 @@ class NsaTooltipManager extends NsaBaseAccesstive {
           } catch (error) {
             console.error('Error in onShow callback:', error);
           }
+        },
+        onShown: (instance) => {
+          // Final position update after shown
+          instance.popperInstance?.update();
         },
         onHide: () => {
           // Ensure the currentIndex is saved when tooltip is hidden
@@ -1101,6 +1370,7 @@ class NsaTooltipManager extends NsaBaseAccesstive {
                   this.updateTooltipIcon(tooltipIcon, issue);
 
                   // Generate HTML for current issue
+                  // Set dropdown to FALSE so details are visible immediately
                   const issueHTML = renderIssueDetails(
                     issue,
                     localIssueIndex,
@@ -1109,6 +1379,8 @@ class NsaTooltipManager extends NsaBaseAccesstive {
                       aiSolutionIcon: aiSolutionIcon,
                       chevronDownIcon: chevronDownIcon,
                       chevronUpIcon: chevronUpIcon,
+                      showButtons: true,
+                      dropdown: false  // FALSE = show details immediately
                     }
                   );
 
@@ -1286,26 +1558,48 @@ class NsaTooltipManager extends NsaBaseAccesstive {
 
       // Skip selectors that target sidebar elements (extension's own UI)
       if (this.isSidebarElementSelector(selector)) {
-        console.log('⚠️ Tooltip Manager: Skipping sidebar element selector:', selector);
         return [];
       }
 
       // Validate that this is a proper accessibility issue selector
       if (!this.isValidAccessibilitySelector(selector)) {
-        console.log('⚠️ Tooltip Manager: Skipping invalid accessibility selector:', selector);
         return [];
       }
 
-      console.log('🔍 Tooltip Manager: Looking for elements with selector in ACTIVE TAB:', selector);
+      // Skip if already failed multiple times
+      if (this.failedSelectors.has(selector)) {
+        return [];
+      }
 
-      // Send message to content script to find elements in the active tab
-      this.findElementsInActiveTab(selector);
+      // 🚀 PERFORMANCE: Try local querySelector FIRST
+      try {
+        const localElements = Array.from(document.querySelectorAll(selector));
+        
+        if (localElements.length > 0) {
+          // Filter out extension UI elements
+          const validElements = localElements.filter(el => 
+            !el.closest('#nsaAuditWidget') && 
+            !el.classList.contains('nsa-audit-tooltip-icon')
+          );
+          
+          if (validElements.length > 0) {
+            return validElements;
+          }
+        }
+      } catch (localError) {
+        // Silently fail and try content script
+      }
 
-      // Return empty array since we're delegating to content script
-      // The actual tooltip attachment will happen via content script communication
+      // Only delegate to content script if not already pending
+      if (!this.contentScriptPending.has(selector)) {
+        this.contentScriptPending.add(selector);
+        this.findElementsInActiveTab(selector).finally(() => {
+          this.contentScriptPending.delete(selector);
+        });
+      }
+
       return [];
     } catch (error) {
-      console.error(`❌ Tooltip Manager: Error finding elements by selector: ${selector}`, error);
       return [];
     }
   }
@@ -1387,122 +1681,71 @@ class NsaTooltipManager extends NsaBaseAccesstive {
    */
   private async findElementsInActiveTab(selector: string): Promise<void> {
     try {
-      console.log('📡 Tooltip Manager: Sending message to content script to find elements:', selector);
-
-      // Get the current tab to send the message to the content script
+      // Get the current tab
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const activeTab = tabs[0];
 
       if (!activeTab?.id) {
-        console.error('❌ Tooltip Manager: No active tab found');
+        this.failedSelectors.add(selector);
         return;
       }
 
-      console.log('📍 Tooltip Manager: Active tab details:', {
-        id: activeTab.id,
-        url: activeTab.url,
-        title: activeTab.title,
-        status: activeTab.status
-      });
-
-      // Find the issues for this selector
+      // Find issues for this selector
       const issues = this.issues.filter(issue => issue.selector === selector);
       
       if (issues.length === 0) {
-        console.warn('⚠️ Tooltip Manager: No issues found for selector:', selector);
-        console.log('🔍 Tooltip Manager: Available issues count:', this.issues.length);
-        console.log('🔍 Tooltip Manager: Sample selectors:', this.issues.slice(0, 3).map(i => i.selector));
+        this.failedSelectors.add(selector);
         return;
       }
 
-      // First, check if content script is loaded by sending a ping
+      // Check if content script is loaded
       let contentScriptReady = false;
       try {
-        console.log('📡 Tooltip Manager: Checking if content script is loaded...');
-        const pingResponse = await chrome.tabs.sendMessage(activeTab.id, { action: 'ping' });
-        console.log('✅ Tooltip Manager: Content script is loaded and responding');
+        await chrome.tabs.sendMessage(activeTab.id, { action: 'ping' });
         contentScriptReady = true;
-      } catch (pingError) {
-        console.warn('⚠️ Tooltip Manager: Content script not loaded, attempting to inject...');
-        
-        // Try to inject the content script
+      } catch {
+        // Try to inject content script
         try {
           await chrome.scripting.executeScript({
             target: { tabId: activeTab.id },
             files: ['content.js']
           });
-          console.log('✅ Tooltip Manager: Content script injected successfully');
           
-          // Wait a bit for the script to initialize and verify it's ready
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Wait for initialization
+          await new Promise(resolve => setTimeout(resolve, 500));
           
-          // Verify content script is now ready
+          // Verify it's ready
           try {
-            const verifyResponse = await chrome.tabs.sendMessage(activeTab.id, { action: 'ping' });
-            console.log('✅ Tooltip Manager: Content script verified as ready after injection');
+            await chrome.tabs.sendMessage(activeTab.id, { action: 'ping' });
             contentScriptReady = true;
-          } catch (verifyError) {
-            console.error('❌ Tooltip Manager: Content script not responding after injection');
+          } catch {
+            this.failedSelectors.add(selector);
             return;
           }
-        } catch (injectError) {
-          console.error('❌ Tooltip Manager: Failed to inject content script:', injectError);
+        } catch {
+          this.failedSelectors.add(selector);
           return;
         }
       }
 
-      // Only proceed if content script is ready
       if (!contentScriptReady) {
-        console.error('❌ Tooltip Manager: Content script is not ready, cannot attach tooltips');
+        this.failedSelectors.add(selector);
         return;
       }
 
-      // Send message to content script to find elements and attach tooltips
+      // Send message to find elements
       const response = await chrome.tabs.sendMessage(activeTab.id, {
         action: 'findElementsAndAttachTooltips',
         selector: selector,
         issues: issues
       });
 
-      if (response?.success) {
-        console.log('✅ Tooltip Manager: Content script found elements and attached tooltips successfully');
-      } else {
-        console.error('❌ Tooltip Manager: Content script failed to find elements or attach tooltips:', response?.error);
-        // Don't create sidebar fallback - we want tooltips only in active tab
-        console.log('⚠️ Tooltip Manager: Failed to attach tooltips to active tab elements');
+      if (!response?.success) {
+        this.failedSelectors.add(selector);
       }
 
     } catch (error) {
-      console.error('❌ Tooltip Manager: Error communicating with content script:', error);
-      
-      // If it's a "receiving end does not exist" error, try to inject the content script
-      if (error instanceof Error && error.message.includes('receiving end does not exist')) {
-        console.log('🔄 Tooltip Manager: Attempting to inject content script...');
-        try {
-          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-          const activeTab = tabs[0];
-          
-          if (activeTab?.id) {
-            await chrome.scripting.executeScript({
-              target: { tabId: activeTab.id },
-              files: ['content.js']
-            });
-            console.log('✅ Tooltip Manager: Content script injected successfully');
-            
-            // Wait for script to initialize and retry
-            setTimeout(() => {
-              this.findElementsInActiveTab(selector);
-            }, 2000);
-          }
-        } catch (injectError) {
-          console.error('❌ Tooltip Manager: Failed to inject content script:', injectError);
-          // Don't create sidebar fallback - we want tooltips only in active tab
-          console.log('⚠️ Tooltip Manager: Failed to inject content script, cannot attach tooltips to active tab');
-        }
-      } else {
-        // For other errors, don't create sidebar fallback
-        console.log('⚠️ Tooltip Manager: Communication error, cannot attach tooltips to active tab');
-      }
+      this.failedSelectors.add(selector);
     }
   }
 

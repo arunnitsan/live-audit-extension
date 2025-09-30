@@ -72,36 +72,28 @@ export class AccesstiveContentScript {
 
         case 'findElementsAndAttachTooltips':
           try {
-            console.log('📡 Content Script: Received findElementsAndAttachTooltips message:', request)
-            
             const { selector, issues } = request
             
             if (!selector || !issues) {
-              console.error('❌ Content Script: No selector or issues provided for tooltip attachment')
               sendResponse({ success: false, error: 'No selector or issues provided' })
               return
             }
             
-            // Find elements using the selector
+            // Find elements using the selector (silent)
             const elements = this.findElementsBySelector(selector)
             
             if (elements.length === 0) {
-              console.warn('⚠️ Content Script: No elements found for selector:', selector)
               sendResponse({ success: false, error: 'No elements found' })
               return
             }
             
-            console.log('✅ Content Script: Found', elements.length, 'elements for tooltip attachment')
-            
-            // Attach tooltips to each found element
-            for (const element of elements) {
-              await this.attachTooltipToElement(element, issues)
+            // Attach tooltips to each found element (silent)
+            for (const elem of elements) {
+              await this.attachTooltipToElement(elem, issues)
             }
             
-            console.log('✅ Content Script: Tooltips attached successfully to', elements.length, 'elements')
             sendResponse({ success: true, elementsCount: elements.length })
           } catch (error) {
-            console.error('❌ Content Script: Error finding elements and attaching tooltips:', error)
             sendResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' })
           }
           break
@@ -479,19 +471,15 @@ export class AccesstiveContentScript {
    */
   private findElementsBySelector(selector: string): Element[] {
     try {
-      console.log('🔍 Content Script: Looking for elements with selector:', selector)
-
-      // First try direct match
+      // Silent element finding - no console spam
       const directMatches = Array.from(document.querySelectorAll(selector))
       if (directMatches.length > 0) {
-        console.log('✅ Content Script: Found', directMatches.length, 'elements with direct selector match')
         return directMatches
       }
-
-      console.warn('❌ Content Script: No elements found for selector:', selector)
+      
       return []
     } catch (error) {
-      console.error(`❌ Content Script: Error finding elements by selector: ${selector}`, error)
+      // Silent error handling
       return []
     }
   }

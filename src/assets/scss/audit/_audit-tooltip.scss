@@ -6,10 +6,12 @@
 [data-theme="nsa-audit"] {
   font-family: $font-family;
   background-color: light-dark(var(--nsa-white), var(--nsa-black)) !important;
-  box-shadow: #333 0 0 10px 1px;
-
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.1);
+  max-width: 480px !important;
+  
   &.tippy-box {
-    border-radius: 10px;
+    border-radius: 12px;
+    overflow: hidden;
   }
 
   .tippy-arrow {
@@ -18,6 +20,26 @@
 
   .tippy-content {
     padding: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+    
+    // Custom scrollbar
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: light-dark(var(--nsa-gray-light-color), var(--nsa-gray-dark-color));
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: light-dark(var(--nsa-navy-blue-color), var(--nsa-primary-color));
+      border-radius: 4px;
+      
+      &:hover {
+        background: var(--nsa-primary-color);
+      }
+    }
   }
 
   .nsa-audit-body--dark & {
@@ -30,21 +52,49 @@
   @include mix.font-size(font.$font-sizes16);
 }
 
-// Icon for Impact Levels
+// Icon for Impact Levels - Optimized for all window sizes
 .nsa-audit-tooltip-icon {
-  position: relative;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  width: 32px !important;
-  height: 32px !important;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  min-height: 26px !important;
+  max-width: 26px !important;
+  max-height: 26px !important;
   flex-shrink: 0;
   border-radius: 50% !important;
-  border: 1px solid $nsa-black;
+  border: 2px solid rgba(0, 0, 0, 0.8);
   text-align: center;
-  margin-left: 15px;
   pointer-events: auto !important;
-  z-index: 999;
+  z-index: 1000;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  margin: 0 0 0 8px !important;
+  vertical-align: middle !important;
+  position: relative !important; // Anchor point for Tippy positioning
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  
+  // Better hover state
+  &:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  
+  // Focus state for keyboard navigation
+  &:focus {
+    outline: 3px solid var(--nsa-primary-color);
+    outline-offset: 2px;
+    transform: scale(1.1);
+  }
+  
+  // Active state (when clicked)
+  &:active {
+    transform: scale(0.95);
+  }
 
   svg {
     width: 100%;
@@ -141,12 +191,13 @@
 .nsa-tooltip-body {
   .nsa-issue-header {
     pointer-events: none;
-    padding: 10px;
+    padding: 12px 16px;
     margin-bottom: 0;
     border: 0;
     width: 100%;
     text-align: left;
-    border-bottom: 1px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+    border-bottom: 2px solid light-dark($nsa-navy-blue-color, $nsa-gray-dark-color);
+    background: light-dark(var(--nsa-gray-light-color), rgba(255, 255, 255, 0.05));
   }
 
   .nsa-tooltip-issue {
@@ -154,18 +205,43 @@
   }
 
   .nsa-issue-details {
-    max-height: 85vh;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 16px;
+    
+    // Smooth scroll
+    scroll-behavior: smooth;
+    
+    // Custom scrollbar
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.2));
+      border-radius: 3px;
+      
+      &:hover {
+        background: light-dark(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.3));
+      }
+    }
   }
 }
 
 .nsa-tooltip-nav {
   color: $nsa-white;
-  padding: 0.25rem 0.5rem;
+  padding: 8px 12px;
   text-decoration: none;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  background: light-dark(var(--nsa-gray-light-color), rgba(255, 255, 255, 0.05));
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
   @include mix.font-size(font.$font-sizes14);
 
   button {
@@ -173,18 +249,30 @@
     cursor: pointer;
     background-color: light-dark($nsa-navy-blue-color, $nsa-navy-blue-color);
     color: light-dark($nsa-white, $nsa-white);
-    padding: 0.25rem 0.5rem;
+    padding: 6px 12px;
     text-decoration: none;
     display: flex;
     justify-content: center;
     align-items: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
     @include mix.font-size(font.$font-sizes14);
+    
+    &:hover:not(:disabled) {
+      background-color: var(--nsa-primary-color);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
 
     &:disabled {
       background-color: $nsa-gray-dark-color;
       color: $nsa-white;
       cursor: not-allowed;
-      opacity: 0.5;
+      opacity: 0.4;
     }
   }
 
@@ -224,7 +312,17 @@
 }
 
 .nsa-tooltip-wrapper {
-  position: relative;
+  position: relative !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  line-height: 1 !important;
+  
+  // Ensure icons stay properly positioned within wrapper
+  .nsa-audit-tooltip-icon {
+    position: relative !important;
+    margin-left: 8px !important;
+    display: inline-flex !important;
+  }
 }
 
 @keyframes nsa-pulse {

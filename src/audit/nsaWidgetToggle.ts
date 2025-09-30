@@ -3,7 +3,6 @@ import NsaBaseAccesstive from './nsaBasePlugin';
 
 export class NsaWidgetToggle extends NsaBaseAccesstive {
   private nsaToggleButton: HTMLElement | null = null;
-  private nsaCloseButton: HTMLButtonElement | null = null;
   private nsaAuditThemeBtn: HTMLButtonElement | null = null;
   private nsaScanButton: HTMLButtonElement | null = null;
   private nsaPanel: HTMLElement | null = null;
@@ -11,9 +10,6 @@ export class NsaWidgetToggle extends NsaBaseAccesstive {
   private nsaIsOpen: boolean = false;
   private nsaIsDark: boolean = true;
   private nsaW3cLink: HTMLAnchorElement | null = null;
-  private isResizing: boolean = false;
-  private startX: number = 0;
-  private startWidth: number = 0;
 
   constructor() {
     super();
@@ -44,7 +40,6 @@ export class NsaWidgetToggle extends NsaBaseAccesstive {
     this.nsaToggleButton = this.queryShadowSelector('#nsaAuditToggle') as HTMLElement;
     this.nsaPanel = this.queryShadowSelector('#nsaAuditPanel') as HTMLElement;
     this.nsaAuditWidget = this.queryShadowSelector('#nsaAuditWidget') as HTMLElement;
-    this.nsaCloseButton = this.queryShadowSelector('#nsaCloseBtn') as HTMLButtonElement;
     this.nsaAuditThemeBtn = this.queryShadowSelector('#nsaAuditThemeBtn') as HTMLButtonElement;
     this.nsaScanButton = this.queryShadowSelector('#nsaScanBtn') as HTMLButtonElement;
     this.nsaW3cLink = this.queryShadowSelector('#nsaW3cLink') as HTMLAnchorElement;
@@ -62,7 +57,6 @@ export class NsaWidgetToggle extends NsaBaseAccesstive {
   protected nsaInit(): void {
     this.nsaSetupToggleHandlers();
     this.nsaSetupKeyboardShortcuts();
-    this.nsaSetupResizeHandler();
 
     // Open widget by default after page load
     setTimeout(() => {
@@ -77,73 +71,16 @@ export class NsaWidgetToggle extends NsaBaseAccesstive {
   private nsaSetupToggleHandlers(): void {
     if (this.shadowRoot) {
       this.nsaToggleButton?.addEventListener('click', () => this.nsaTogglePanel());
-      this.nsaCloseButton?.addEventListener('click', () => this.nsaTogglePanel());
       this.nsaAuditThemeBtn?.addEventListener('click', () => this.nsaToggleTheme());
     }
   }
 
-  private nsaSetupResizeHandler(): void {
-    if (!this.nsaPanel || !this.shadowRoot) return;
-    this.startWidth = this.nsaPanel.offsetWidth;
-    document.documentElement.style.setProperty('margin-right', `${this.startWidth}px`);
-
-    const handleMouseDown = (e: MouseEvent) => {
-      if (!this.nsaPanel) return;
-
-      // Only start resize if clicking on the left edge (first 4px)
-      if (e.offsetX > 6) return;
-
-      this.isResizing = true;
-      this.startX = e.clientX;
-      this.startWidth = this.nsaPanel.offsetWidth;
-
-      // Add a class to prevent text selection during resize
-      this.shadowRoot?.host.classList.add('nsa-resizing');
-
-      // Attach event listeners to document instead of shadowRoot
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-
-      // Prevent text selection during resize
-      e.preventDefault();
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!this.isResizing || !this.nsaPanel) return;
-
-      // Calculate new width based on mouse movement
-      const deltaX = e.clientX - this.startX;
-      const newWidth = Math.min(Math.max(this.startWidth - deltaX, 400), 2000);
-
-      // Apply the new width
-      document.documentElement.style.setProperty('margin-right', `${newWidth}px`);
-      this.nsaPanel.style.width = `${newWidth}px`;
-
-      // Force a reflow to ensure smooth animation
-      this.nsaPanel.offsetHeight;
-    };
-
-    const handleMouseUp = () => {
-      this.isResizing = false;
-      this.shadowRoot?.host.classList.remove('nsa-resizing');
-      // Remove event listeners from document
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    this.nsaPanel.addEventListener('mousedown', handleMouseDown);
-  }
 
   private nsaTogglePanel(): void {
     this.nsaIsOpen = !this.nsaIsOpen;
-    if (this.nsaIsOpen) {
-      document.documentElement.style.setProperty('margin-right', `${this.startWidth}px`);
-    } else {
-      document.documentElement.style.removeProperty('margin-right');
-    }
+    
     // Update ARIA attributes
     this.nsaToggleButton?.setAttribute('aria-expanded', String(this.nsaIsOpen));
-    this.nsaCloseButton?.setAttribute('aria-expanded', String(this.nsaIsOpen));
     const urlParams = new URLSearchParams(window.location.search);
     let website = urlParams.get('website');
     if (!website) {
@@ -162,6 +99,16 @@ export class NsaWidgetToggle extends NsaBaseAccesstive {
     // Toggle panel visibility
     if (this.nsaPanel) {
       this.nsaPanel.classList.toggle('nsa-audit-panel--visible', this.nsaIsOpen);
+    }
+    
+    // Dispatch event to notify tooltip manager about sidebar toggle
+    if (this.shadowRoot) {
+      const event = new CustomEvent('nsaSidebarToggled', {
+        detail: { isOpen: this.nsaIsOpen },
+        bubbles: true,
+        composed: true
+      });
+      this.shadowRoot.dispatchEvent(event);
     }
 
     // Check if we have stored audit results
@@ -193,10 +140,8 @@ export class NsaWidgetToggle extends NsaBaseAccesstive {
   private nsaSetupKeyboardShortcuts(): void {
     // Attach keyboard shortcuts to document instead of shadowRoot
     document.addEventListener('keydown', (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && this.nsaIsOpen) {
-        this.nsaTogglePanel();
-      }
-
+      // Removed Escape to close - widget stays open
+      
       if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'a') {
         event.preventDefault();
         this.nsaTogglePanel();
@@ -206,10 +151,6 @@ export class NsaWidgetToggle extends NsaBaseAccesstive {
 
   public nsaOpenPanel(): void {
     if (!this.nsaIsOpen) this.nsaTogglePanel();
-  }
-
-  public nsaClosePanel(): void {
-    if (this.nsaIsOpen) this.nsaTogglePanel();
   }
 
   public nsaEnableToggleButton(): void {
